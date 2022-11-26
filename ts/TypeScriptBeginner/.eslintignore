@@ -1,1 +1,4 @@
+# eslint チェックをしないファイルを追記
 .eslintrc.cjs
+package-lock.json
+package.json
