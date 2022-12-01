@@ -35,6 +35,9 @@
     - [3.5.7 タプル型](#357-タプル型)
   - [3.6 分割代入](#36-分割代入)
     - [3.6.1 オブジェクトの分割代入(1) 基本的なパターン](#361-オブジェクトの分割代入1-基本的なパターン)
+    - [3.6.2 オブジェクトの分割代入(2) ネストしたパターン](#362-オブジェクトの分割代入2-ネストしたパターン)
+    - [3.6.4 分割代入のデフォルト値](#364-分割代入のデフォルト値)
+    - [3.6.5 rest パターンでオブジェクトの残りを取得する](#365-rest-パターンでオブジェクトの残りを取得する)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -434,3 +437,62 @@ const bar = obj.bar
   - この識別子は，取得したいオブジェクトのプロパティ名を指し示す役割と，それを入れる変数名を決める役割を併せ持っている
   - オブジェクトのプロパティの中身をプロパティ名と同名の変数に入れたい場合にしか使えない
 - 分割代入で宣言された変数には型注釈がつけられない
+
+### 3.6.2 オブジェクトの分割代入(2) ネストしたパターン
+ネストしたオブジェクト
+- オブジェクトのプロパティにさらにオブジェクトが入っているという構造
+  ```ts
+  const nested = {
+    num: 123,
+    obj: {
+      foo: "hello",
+      bar: "world"
+    }
+  }
+  ```
+- このようなオブジェクトに対してはパターンをネストさせることでネストの内側のプロパティを取得することができる
+  ```ts
+  const {num, obj:{foo}} = nested
+  // obj:{foo} で，nested.obj に対して {foo} という分割代入を行ったのと同じになる
+
+  console.log(num) //123 と表示される
+  console.log(foo) // hello と表示される
+
+### 3.6.3 配列の分割代入
+```ts
+const arr = [1, 2, 4, 8, 16, 32]
+
+const [first, second, third] = arr
+console.log(first) // 1
+console.log(second) // 2
+console.log(third) // 4
+
+const [, foo, , bar, , baz] = arr
+console.log(foo) // 2
+console.log(bar) // 8
+console.log(baz) // 32
+```
+
+### 3.6.4 分割代入のデフォルト値
+デフォルト値は undefined のみに対して適用される
+- null に対しては何も行わない
+```ts
+type Obj = {foo?: number}
+const obj1: Obj = {}
+const obj2: Obj = {foo: -1234}
+
+const {foo = 500} = obj1 // foo には500が代入される
+const {foo:bar = 500} = obj2 // bar には-1234が代入される
+```
+### 3.6.5 rest パターンでオブジェクトの残りを取得する
+```ts
+const obj = {
+  foo: 123,
+  bar: "string"
+  baz: false
+}
+
+const {foo, ...restObj} = obj
+console.log(foo) // 123 が表示される
+console.log(restObj) // {bar: "string", baz: false} が表示される
+```
