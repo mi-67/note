@@ -38,6 +38,17 @@
     - [3.6.2 オブジェクトの分割代入(2) ネストしたパターン](#362-オブジェクトの分割代入2-ネストしたパターン)
     - [3.6.4 分割代入のデフォルト値](#364-分割代入のデフォルト値)
     - [3.6.5 rest パターンでオブジェクトの残りを取得する](#365-rest-パターンでオブジェクトの残りを取得する)
+- [4. TypeScript の関数](#4-typescript-の関数)
+  - [4.1 関数の作り方](#41-関数の作り方)
+    - [4.1.1 関数宣言で関数を作る](#411-関数宣言で関数を作る)
+    - [4.1.3 関数式で関数を作る](#413-関数式で関数を作る)
+    - [4.1.4 アロー関数で関数を作る](#414-アロー関数で関数を作る)
+    - [4.1.5 アロー関数式の省略形](#415-アロー関数式の省略形)
+    - [4.1.6 メソッド記法で関数を作る](#416-メソッド記法で関数を作る)
+    - [4.1.7 可変長引数の宣言](#417-可変長引数の宣言)
+    - [4.1.8 関数呼び出しにおけるスプレッド構文](#418-関数呼び出しにおけるスプレッド構文)
+    - [4.1.9 オプショナル引数の宣言](#419-オプショナル引数の宣言)
+    - [4.1.10 コールバック関数を使ってみる](#4110-コールバック関数を使ってみる)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -496,3 +507,240 @@ const {foo, ...restObj} = obj
 console.log(foo) // 123 が表示される
 console.log(restObj) // {bar: "string", baz: false} が表示される
 ```
+
+# 4. TypeScript の関数
+## 4.1 関数の作り方
+### 4.1.1 関数宣言で関数を作る
+関数を作る最もベーシックな方法：関数宣言（function declaration）
+```ts
+function 関数名(引数リスト):返り値の型 {
+  関数の中身
+}
+```
+```ts
+function range(min: number, max: number): number[] {
+  const result = []
+  for(let i=min; i<=max; i++) {
+    result.push(i)
+  }
+  return result
+}
+
+console.log(range(5, 10)) // [5, 6, 7, 8, 9, 10] と表示される
+```
+
+### 4.1.3 関数式で関数を作る
+関数宣言と関数式（function expression）の大きな違い：それが文なのか式なのか
+```ts
+function (引数リスト):返り値の型 {
+  関数の中身
+}
+```
+```ts
+type Human = {
+  height: number
+  weight: number
+}
+const calcBMI = function(human: Human):number {
+  return human.weight / human.height ** 2
+}
+
+const uhyo: Human = {height:1.84, weight: 72}
+console.log(calcBMI(uhyo))
+```
+
+### 4.1.4 アロー関数で関数を作る
+アロー関数式（arrow function expression）
+- 関数式（function関数式）に代わるもう一つの関数式
+```ts
+(引数リスト):返り値の型 => {中身}
+```
+```ts
+type Human = {
+  height: number
+  weight: number
+}
+const calcBMI = ({height, weight}:Human):number => {
+  return weight / height**2
+}
+
+const uhyo: Human = {height:1.84, weight:72}
+console.log(calcBMI(uhyo))
+```
+アロー関数の方が function 関数式よりも後から導入されたため使い勝手がいい
+- function 関数式よりも構文が完結
+  - 特に function という長いキーワードを書かなくても良い
+- [省略記法](#415-アロー関数式の省略形)
+- [this の扱い](#542-アロー関数におけるthis)
+ 
+### 4.1.5 アロー関数式の省略形
+簡単な関数を定義するときに有用な構文
+```ts:省略なし
+(引数リスト):返り値の型 => {中身}
+```
+```ts:省略あり
+(引数リスト):返り値の型 => 式
+```
+省略形では `=>` の右側に書けるのが式１つだけ
+```ts
+(引数リスト):返り値の型 => 式
+//上式は以下と同値
+(引数リスト):返り値の型 => {return 式}
+```
+```ts
+// 普通の書き方
+const calcBMI = ({height, weight}:Human):number =>{
+  return weight / height ** 2
+}
+
+// 省略形
+const calcBMI = ({height, weight}:Human):number =>　weight / height ** 2
+```
+注意点
+- 返り値の式としてオブジェクトリテラルを使用するときは `()` で囲む必要がある
+  - `()` で囲まないと，`=>` の右の `{}` がオブジェクトリテラルではなく省略形ではないアロー関数を囲む `{}` であるとみなされてしまう
+  ```ts
+  type Human = {
+    height: number
+    weight: number
+  }
+  type ReturnObj = {
+    bmi: number
+  }
+
+  // 正しい書き方
+  const calcBMIObject = ({height, weight}:Human):ReturnObj => ({
+    bmi: weight / height ** 2
+  })
+
+  // コンパイルエラーになる書き方
+  const calcBMIObject = ({height, weight}:Human):ReturnObj => {
+    bmi: weight / height ** 2
+  }
+  ```
+
+### 4.1.6 メソッド記法で関数を作る
+```ts
+プロパティ名(引数リスト):返り値の型{
+  中身
+}
+```
+```ts
+const obj = {
+  // メソッド記法
+  double(num: number):number {
+    return num * 2
+  },
+  // 通常の記法+アロー関数
+  double2:(num: number):number => num * 2
+}
+```
+
+### 4.1.7 可変長引数の宣言
+可変長引数：関数が任意の数の引数を受け取れるようにすること
+- rest 構文を用いる
+  - `...引数名:型` という形式
+  - 関数宣言の引数リストの最後で1回だけ使用できる
+  - rest 引数の型注釈は必ず配列型（もしくはタプル型）
+  ```ts
+  const sum = (...args: number[]) => {
+    let result = 0
+    for(const num of args){
+      result += num
+    }
+    return result
+  }
+
+  console.log(sum(1, 10, 100))
+  console.log(sum(123, 456))
+  ```
+
+### 4.1.8 関数呼び出しにおけるスプレッド構文
+関数呼び出しの引数として `...式` という構文が使用できる
+```ts
+const sum = (...args: number[]):number => {
+  let result = 0
+  for(const num of args) {
+    result += num
+  }
+  return result
+}
+
+const nums = [1, 2, 3, 4, 5]
+console.log(sum(...nums))
+```
+
+### 4.1.9 オプショナル引数の宣言
+オプショナルな引数 = 渡しても渡さなくてもどっちでもいい引数
+- デフォルト値を指定しない場合
+  - `引数名?:型`　という構文を用いる
+  ```ts
+  const toLowerOrUpper = (str: string, upper?:boolean):string => {
+    if (upper) {
+      return str.toUpperCase()
+    } else {
+      return str.toLowerCase()
+    }
+  }
+
+  console.log(toLowerOrUpper("Hello")) // hello と表示される
+  console.log(toLowerOrUpper("Hello", false)) // hello と表示される
+  console.log(toLowerOrUpper("Hello", true)) // HELLO と表示される
+  ```
+- デフォルト値を指定する場合
+  - `変数名:型 = 式`　という構文を用いる
+  ```ts
+  const toLowerOrUpper = (str: string, upper:boolean = false):string => {
+    if (upper) {
+      return str.toUpperCase()
+    } else {
+      return str.toLowerCase()
+    }
+  }
+
+  console.log(toLowerOrUpper("Hello")) // hello と表示される
+  console.log(toLowerOrUpper("Hello", false)) // hello と表示される
+  console.log(toLowerOrUpper("Hello", true)) // HELLO と表示される
+  ```
+ 
+### 4.1.10 コールバック関数を使ってみる
+コールバック関数
+- 関数の引数として関数を渡すことを指す
+- 引数として渡される関数 = コールバック関数
+
+よくコールバック関数のお世話になるのは配列のメソッドを使うとき
+- 配列はコールバック関数を受け取るメソッドをいくつも持っている
+  - 代表例: map関数
+    - 渡されたコールバック関数を配列の各要素に適応した結果からなる新しい配列を返す
+    ```ts
+    type User = {
+      name: string
+      age: number
+    }
+    const getName = (u:User):string => u.name
+
+    const users:User[] = {
+      {name: "uhyo", age: 26},
+      {name: "John Smith", age: 15}
+    }
+    // users.map は users の各要素に getName を適用することで作られた新しい配列を返す
+    const names = users.map(getName) //getName はコールバック関数
+    console.log(names) // ["uhyo", "John Smith"] と表示される
+
+    // こう書いた方がプログラムの見通しが良い
+    const names2 = users.map((u: User):string => u.name)
+    ```
+  - その他の例
+    ```ts
+    // 20歳以上のユーザだけの配列
+    const adultUsers = users.filter((user:User) => user.age >= 20)
+
+    // 全てのユーザが20歳以上なら true
+    const allAdult = users.every((user: User) => user.age >= 20)
+
+    // 60歳以上のユーザが１人でもいれば true
+    const seniorExists = users.some((user: User) => user.age >=60)
+
+    // 名前が John で始まるユーザを探して返す
+    const john = users.find((user: User) => user.name.startWith("John"))
+    ```
