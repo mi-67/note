@@ -55,6 +55,10 @@
     - [4.2.3 返り値の型注釈は省略すべきか](#423-返り値の型注釈は省略すべきか)
     - [4.2.4 引数の型注釈が省略可能な場合](#424-引数の型注釈が省略可能な場合)
     - [4.2.5 コールシグネチャによる関数の表現](#425-コールシグネチャによる関数の表現)
+  - [4.3 関数型の部分型関係](#43-関数型の部分型関係)
+    - [4.3.1 返り値の型による部分型関係](#431-返り値の型による部分型関係)
+    - [4.3.2 引数の型による部分型関数](#432-引数の型による部分型関数)
+    - [4.3.3 引数の数による部分型関係](#433-引数の数による部分型関係)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -831,4 +835,65 @@ console.log(double.isUsed)
 
 // double は関数として呼び出せる
 double(100)
+```
+
+## 4.3 関数型の部分型関係
+### 4.3.1 返り値の型による部分型関係
+S が T の部分型
+- 同じ引数リストに対して `(引数リスト) => S` という関数型は `(引数リスト) => T` という関数型の部分型
+  ```ts
+  type HasName = {
+    name: string
+  }
+  type HasNameAndAge = {
+    name: string
+    age: number
+  }
+
+  const fromAge = (age: number):HasNameAndAge =>({
+    name: "John Smith"
+    age
+  })
+  const f: (age: number) => HasName = fromAge
+  const obj: HasName = f(100)
+  ```
+- どんな型を返す関数型も（同じ引数を受け取って）void 型を返す関数型の部分型として扱われる
+
+### 4.3.2 引数の型による部分型関数
+型 S が型 T の部分型であるとき，「 T を引数に受け取る関数」の型は「 S を引数に受け取る関数」の型の部分型となる
+- つまり，「 T を引数に受け取る関数」は「 S を引数に受け取る関数」としても扱える
+  ```ts
+  type HasName = {
+    name: string
+  }
+  type HasNameAndAge = {
+    name: string
+    age: number
+  }
+
+  const showName = (obj: HasName) => {
+    console.log(obj.name)
+  }
+  const g: (obj: HasNameAndAge) => void = showName
+
+  g({
+    name: "uhyo",
+    age: 26
+  })
+  ```
+- 関数型の返り値の型は関数型の**共変**（covariant）の位置にある
+- 関数型の引数の型は**反変**（contravariant）の位置にある
+  - 同じような形（どちらも関数型で引数の数が同じなど）の型 F と型 G があるとき，型 F が型 G の部分型となるためには，F と G を構成するそれぞれの型に対して，共編の位置にあるものについては順方向の部分型関係が成立し，反変の位置にあるものについては逆方向の部分型関係が成立している必要がある
+
+### 4.3.3 引数の数による部分型関係
+```ts
+type UnaryFunc = (arg: number) => number
+type BinaryFunc = (left: number, right: number) => number
+
+const double: UnaryFunc = arg => arg * 2
+const add: BinaryFunc = (left, right) => left + right
+
+// UnaryFunc を BinaryFunc として扱うことができる
+const bin: BinaryFunc = double
+console.log(bin(10, 100)) // 20
 ```
