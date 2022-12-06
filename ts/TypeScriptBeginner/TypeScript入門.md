@@ -59,6 +59,11 @@
     - [4.3.1 返り値の型による部分型関係](#431-返り値の型による部分型関係)
     - [4.3.2 引数の型による部分型関数](#432-引数の型による部分型関数)
     - [4.3.3 引数の数による部分型関係](#433-引数の数による部分型関係)
+  - [4.4 ジェネリック](#44-ジェネリック)
+    - [4.4.1 関数の型引数とは](#441-関数の型引数とは)
+    - [4.4.2 関数の型引数を宣言する方法](#442-関数の型引数を宣言する方法)
+    - [4.4.3 関数の型引数は省略できる](#443-関数の型引数は省略できる)
+    - [4.4.4 型引数を持つ関数型](#444-型引数を持つ関数型)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -896,4 +901,88 @@ const add: BinaryFunc = (left, right) => left + right
 // UnaryFunc を BinaryFunc として扱うことができる
 const bin: BinaryFunc = double
 console.log(bin(10, 100)) // 20
+```
+
+## 4.4 ジェネリック
+ジェネリクス
+- 型引数を受け取る関数を作る機能
+### 4.4.1 関数の型引数とは
+型引数を持つ関数（**ジェネリック関数**）を宣言する際には，関数名のあとに<型引数リスト>という構文を付け足すのが基本
+- 関数呼び出しは `関数<型引数たち>(引数たち)`
+```ts
+function repeat<T>(element: T, length: number): T[]{
+  const result: T[] = []
+  for(let i = 0; i < length; i++) {
+    result.push(element)
+  }
+  return result
+}
+
+console.log(repeat<string>("a", 5))
+console.log(repeat<number>(123, 3))
+```
+
+### 4.4.2 関数の型引数を宣言する方法
+function 関数式
+```ts
+const repeat = function<T>(element: T, length: number): T[]{
+  const result: T[] = []
+  for(let i = 0; i < length; i++){
+    result.push(element)
+  }
+  return result
+}
+```
+アロー関数式
+```ts
+const repeat = <T>(element: T, length: number): T[] => {
+  const result: T[] = []
+  for (let i = 0; i < length; i++) {
+    result.push(element)
+  }
+  return result
+}
+```
+メソッド記法の場合もメソッド名のあと・引数リストの前に置く
+```ts
+const utils = {
+  repeat<T>(element: T, length: number): T[] {
+    const result: T[] = []
+    for (let i = 0; i < length; i++){
+      result.push(element)
+    }
+    return result
+  }
+}
+```
+型引数リストが複数の場合
+```ts
+const pair = <Left, Right>(left: Left, right: Right): [Left, Right] => [left, right]
+const p = pair<string, number>("uhyo", 26)
+```
+
+### 4.4.3 関数の型引数は省略できる
+```ts
+function repeat<T>(element: T, length: number): T[] {
+  const result: T[] = []
+  for (let i = 0; i < length; i++) {
+    result.push(element)
+  }
+  return result
+}
+
+// result は string[] 型となる
+// 省略しない場合は，repeat<string>("a", 5) となる
+const result = repeat("a", 5)
+```
+### 4.4.4 型引数を持つ関数型
+```ts
+// この repeat 関数の型は <T>(element: T, length: number) => T[]
+const repeat = function<T>(element: T, length: number): T[] {
+  const result: T[] = []
+  for (let i = 0; i < length; i++) {
+    result.push(element)
+  }
+  return result
+}
 ```
