@@ -67,6 +67,19 @@
   - [4.5 変数スコープと関数](#45-変数スコープと関数)
     - [4.5.1 変数のスコープとは](#451-変数のスコープとは)
     - [4.5.2 ブロックスコープと関数スコープ](#452-ブロックスコープと関数スコープ)
+- [5. TypeScript のクラス](#5-typescript-のクラス)
+  - [5.1 クラスの宣言と使用](#51-クラスの宣言と使用)
+    - [5.1.1 クラス宣言と new 構文](#511-クラス宣言と-new-構文)
+    - [5.1.2 プロパティを宣言する](#512-プロパティを宣言する)
+    - [5.1.3 メソッドを宣言する](#513-メソッドを宣言する)
+    - [5.1.4 コンストラクタ](#514-コンストラクタ)
+    - [5.1.5 静的プロパティ・静的メソッド](#515-静的プロパティ静的メソッド)
+    - [5.1.6 3種類のアクセシビリティ修飾子](#516-3種類のアクセシビリティ修飾子)
+    - [5.1.7 コンストラクタ引数でのプロパティ宣言](#517-コンストラクタ引数でのプロパティ宣言)
+    - [5.1.8 クラス式でクラスを作成する](#518-クラス式でクラスを作成する)
+    - [5.1.9 もう1つのプライベートプロパティ](#519-もう1つのプライベートプロパティ)
+    - [5.1.10 クラスの静的初期化ブロック](#5110-クラスの静的初期化ブロック)
+    - [5.1.11 型引数を持つクラス](#5111-型引数を持つクラス)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1009,3 +1022,235 @@ const repeat = function<T>(element: T, length: number): T[] {
 - ブロックの範囲に対して発生
 - ブロック：`{...}` という形をもつ文の一種
   - `if` や `for` のあとの `{}` がそれに該当
+
+# 5. TypeScript のクラス
+## 5.1 クラスの宣言と使用
+- クラスの主な用途はオブジェクトの作成
+- クラスによって作成されたオブジェクト = インスタンス（instance）
+### 5.1.1 クラス宣言と new 構文
+- クラス宣言
+  - `class クラス名 {...}`
+  - クラス名には変数名や関数名と同様に識別子を利用することが可能
+  - `...` の部分はクラス定義の本体
+    - インスタンスがどのようなプロパティを持つか規定
+  - `new クラス名()` という式により，クラスのインスタンスを作成できる
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+
+const uhyo = new User()
+console.log(uhyo.name) // "" が表示される
+console.log(uhyo.age) // 0 が表示される
+
+uhyo.age = 26
+console.log(uhyo.age) // 26 が表示される
+
+```
+
+### 5.1.2 プロパティを宣言する
+- プロパティ宣言
+  - ここで宣言されたプロパティは，new によって作成されたインスタンスにあらかじめ備わっている
+  - プロパティ宣言の基本の形は `プロパティ:型 = 式`
+
+### 5.1.3 メソッドを宣言する
+- クラス宣言の中では，メソッド (method) の宣言も書くことができる
+- クラス宣言の中にメソッドの宣言を書くと，そのクラスのインスタンスは自動的にそのメソッドを持った状態で作成される
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+
+  setAge(newAge: number) {
+    this.age = newAge
+  }
+}
+
+const uhyo = new User()
+console.log(uhyo.isAdult()) // false が表示される
+uhyo.setAge(26)
+console.log(uhyo.isAdult()) // true が表示される
+```
+
+### 5.1.4 コンストラクタ
+- コンストラクタ
+  - `new` により作成される際に呼び出される関数
+  - インスタンスのプロパティを初期化することができる
+  - クラス宣言の中に `constructor` という名前のメソッド宣言を書く
+```ts
+class User {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name)
+console.log(uhyo.isAdult)
+```
+
+### 5.1.5 静的プロパティ・静的メソッド
+静的メソッド・静的プロパティ
+- インスタンスではなく**クラスそのもの**に属するプロパティ・メソッド
+- 通常のプロパティ・メソッドの宣言の前に static とつけて宣言
+```ts
+class User {
+  static adminName: string = "uhyo"
+  static getAdminUser() {
+    return new User(User.adminName,26)
+  }
+
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+}
+
+console.log(User.adminName) // "uhyo" が表示される
+const admin = User.getAdminUser()
+console.log(admin.age) // 26 が表示される
+console.log(admin.isAdult()) // true が表示される
+
+const uhyo = new User("uhyo", 26)
+
+// エラー：Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
+console.log(uhyo.adminName)
+```
+
+### 5.1.6 3種類のアクセシビリティ修飾子
+- クラス宣言内のプロパティ宣言・メソッド宣言にはアクセシビリティ修飾子を孵化することができる
+  - public（あるいは何も書かない場合）
+  - protected
+    - クラス自身だけでなく，そのクラスを継承するクラスからもアクセスできる
+  - private
+    - クラス内部からしかアクセスできない
+
+### 5.1.7 コンストラクタ引数でのプロパティ宣言
+```ts
+class User {
+  name: string
+  private age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+}
+
+// 省略すると次のようになる
+class User {
+  constructor(public name: string, private age: number){}
+}
+```
+### 5.1.8 クラス式でクラスを作成する
+クラス式
+- クラス宣言と同様の構文を式として使用できる
+- ただし，クラス名の識別子部分を省略可
+  - `class {...}`
+```ts
+const User = class {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+  public isAdlut(): boolean {
+    return this.age >=  20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name)
+console.log(uhyo.isAdult())
+```
+
+### 5.1.9 もう1つのプライベートプロパティ
+プライベートプロパティ
+- クラスの内部からしか参照できないプロパティ
+- `#プロパティ名` のように先頭に `#` をつけた名前のプロパティは `private` プロパティと同様にそのクラス中でのみアクセス可能
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name) // "uhyo" が表示される
+console.log(uhyo.isAdult()) // true が表示される
+// エラー： Property '#age' is not accessible outside class 'User' because it has a private identifier.
+console.log(uhyo.#age)
+```
+
+### 5.1.10 クラスの静的初期化ブロック
+静的初期化ブロック(static initialization block)
+- 俗にいう static block
+- クラス宣言の中に `static{...}` という構文を書ける
+```ts
+console.log("Hello")
+class C {
+  static {
+    console.log("uhyo")
+  }
+}
+console.log("world")
+```
+
+### 5.1.11 型引数を持つクラス
+```ts
+class User<T> {
+  name: string
+  #age: number
+  readonly data: T
+
+  constructor(name: string, age: number, data: T){
+    this.name = name
+    this.#age = age
+    this.data = data
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+// uhyo は User<string> 型
+const uhyo = new User<string>("uhyo", 26, "追加データ")
+
+// data は string 型
+const data = uhyo.data
+
+// john は　User<{num: number}> 型
+const john = new User("John Smith", 15, {num: 123})
+
+// data2 は {num: number} 型
+const data2 = john.data
+```
