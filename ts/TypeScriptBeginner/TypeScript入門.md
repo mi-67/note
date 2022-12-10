@@ -82,6 +82,8 @@
     - [5.1.11 型引数を持つクラス](#5111-型引数を持つクラス)
   - [5.2 クラスの型](#52-クラスの型)
     - [5.2.1 クラス宣言はインスタンスの型を作る](#521-クラス宣言はインスタンスの型を作る)
+    - [5.2.2 new シグネチャによるインスタンス化可視性の表現](#522-new-シグネチャによるインスタンス化可視性の表現)
+    - [5.2.3 instanceof 演算子と型の絞り込み](#523-instanceof-演算子と型の絞り込み)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1279,3 +1281,81 @@ const uhyo = new User();
 - User 型，すなわち User クラスのインスタンスの特徴は，実際には「string 型のプロパティ name と number 型のプロパティ age を持ち，()=>boolean型 の isAdult メソッドを持つ」
   - new User で作られていないオブジェクト（User のインスタンスではないオブジェクト）でもこの特徴を満たすものは User 型として扱うことができる
   - クラス宣言に特有の挙動であり，クラス式にはそのような効果はないので注意
+
+### 5.2.2 new シグネチャによるインスタンス化可視性の表現
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+
+type MyUserConstructor = new() => User
+
+// User は　MyUserConstructor 型を持つ
+const MyUser: MyUserConstructor = User
+
+// MyUser は new で使用可能
+const u = new MyUser();
+
+// u は User 型を持つ
+console.log(u.name, u.age)
+```
+
+### 5.2.3 instanceof 演算子と型の絞り込み
+instanceof 演算子
+- 与えられたオブジェクトがあるクラスのインスタンスかどうかを判定
+- `値 instanceof クラスオブジェクト`
+- 返り値は真偽値
+  - 値が与え得られたクラスオブジェクトのインスタンスなら `true`，そうでなければ `false`
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+const uhyo = new User()
+// uhyo は User のインスタンスなので true
+console.log(uhyo instanceof User)
+// {} は User のインスタンスではないので false
+console.log({} instanceof User)
+
+const john: User = {
+  name: "John Smith",
+  age: 15
+}
+
+// john は User のインスタンスではないので false
+console.log(john instanceof User)
+```
+- instanceof 演算子は型の絞り込みをサポート
+```ts
+type HasAge = {
+  age: number
+}
+
+class User {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+}
+
+function getPrice(customer: HasAge){
+  if(customer instanceof User) {
+    if(customer.name === "uhyo") {
+      return 0
+    }
+  }
+  return customer.age < 18 ? 1000 : 1800
+}
+
+const customer1: HasAge = {age:15}
+const customer2: HasAge = {age:40}
+const uhyo = new User("uhyo", 26)
+
+console.log(getPrice(customer1)) // 1000
+console.log(getPrice(customer2)) // 1800
+console.log(getPrice(uhyo)) // 0
+```
