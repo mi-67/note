@@ -84,6 +84,12 @@
     - [5.2.1 クラス宣言はインスタンスの型を作る](#521-クラス宣言はインスタンスの型を作る)
     - [5.2.2 new シグネチャによるインスタンス化可視性の表現](#522-new-シグネチャによるインスタンス化可視性の表現)
     - [5.2.3 instanceof 演算子と型の絞り込み](#523-instanceof-演算子と型の絞り込み)
+  - [5.3 クラスの継承](#53-クラスの継承)
+    - [5.3.1 継承(1) 子は親の機能を受け継ぐ](#531-継承1-子は親の機能を受け継ぐ)
+    - [5.3.2 継承(2) 親の機能を上書きする](#532-継承2-親の機能を上書きする)
+    - [5.3.3 override 修飾子とその威力](#533-override-修飾子とその威力)
+    - [5.3.4 private と protected の動作と使いどころ](#534-private-と-protected-の動作と使いどころ)
+    - [5.3.5 implements キーワードによるクラスの型のチェック](#535-implements-キーワードによるクラスの型のチェック)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1358,4 +1364,162 @@ const uhyo = new User("uhyo", 26)
 console.log(getPrice(customer1)) // 1000
 console.log(getPrice(customer2)) // 1800
 console.log(getPrice(uhyo)) // 0
+```
+
+## 5.3 クラスの継承
+### 5.3.1 継承(1) 子は親の機能を受け継ぐ
+`class クラス名 extends 親クラス {...}`
+- クラス式　の場合はクラス名が省略できる
+  - `class extends 親クラス`
+```ts 
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+}
+
+const uhyo = new PremiumUser("uhyo", 26)
+console.log(uhyo.rank) // 1
+console.log(uhyo.name) // uhyo
+console.log(uhyo.isAdult()) // true
+```
+
+### 5.3.2 継承(2) 親の機能を上書きする
+子クラスは親クラスの機能を上書きすることができる
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+
+// ここでAdultを再宣言
+  public isAdult(): boolean {
+    return true
+  }
+}
+
+const john = new User("John Smith", 15)
+const taro = new PremiumUser("Taro Yamada", 15)
+
+console.log(john.isAdult()) // false
+console.log(taro.isAdult()) // true
+```
+- 子クラスのインスタンスは親クラスのインスタンスの部分型でなければいけない
+  - `PremiumUser` は `User` を拡張したものである以上，`User` として利用可能でなければいけない
+  - `User` クラスの `isAdult` は `() => boolean` 型なので，`PremiumUser` クラスの `isAdult` はこれに一致する
+
+また，コンストラクタもオーバーライドすることができる
+- その場合は子クラスのコンストラクタの中に super 呼び出しを含める必要がある
+```ts
+class PremiumUser extends User {
+  rank: number
+
+  constructor(name: string, age: number, rank: number) {
+    super(name, age) // 親クラスのコンストラクタを呼び出すための特別な構文
+    this.rank = rank
+  }
+}
+
+const uhyo = new PremiumUser("uhyo", 26, 3)
+console.log(uhyo.name) // uhyo
+console.log(uhyo.rank) // 3
+```
+
+### 5.3.3 override 修飾子とその威力
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+  public override isAdult(): boolean {
+    return true
+  }
+}
+```
+override 修飾子と inImplicitOverride コンパイラオプションにより，「オーバーライドしたつもりができていなかった」あるいは「オーバーライドするつもりがないのにオーバーライドしてしまった」というミスを防ぐことができる
+
+### 5.3.4 private と protected の動作と使いどころ
+protected
+- 外部からはアクセスできないが子クラスからはアクセスできるプロパティ・メソッド
+- クラスの外（インスタンスを使うだけのプログラム）からはアクセスされたくないが，子クラスがロジックを拡張することを許す場合に適している
+  - ただし，子クラスによる影響を考えた上で親クラスのロジックを実装する必要がある
+
+private および #
+- 子クラスからもアクセスできない
+
+### 5.3.5 implements キーワードによるクラスの型のチェック
+クラスを作成する際には implements キーワードによる追加の型を利用可能
+- `class クラス名 implements 型 {...}`
+- 継承と併用する場合は extends よりあとに implements を書く
+```ts
+type HasName ={
+  name: string
+}
+
+class User implements HasName {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+```
+User の定義を変えて User 型から name プロパティを消すと，次のようにコンパイルエラーが発生する
+```ts
+type HasName ={
+  name: string
+}
+
+// エラー：Class 'User' incorrectly implements interface 'HasName'.
+// Property 'name' is missing in type 'User' but required in type 'HasName'.
+class User implements HasName {
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
 ```
