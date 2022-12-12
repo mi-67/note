@@ -67,6 +67,36 @@
   - [4.5 変数スコープと関数](#45-変数スコープと関数)
     - [4.5.1 変数のスコープとは](#451-変数のスコープとは)
     - [4.5.2 ブロックスコープと関数スコープ](#452-ブロックスコープと関数スコープ)
+- [5. TypeScript のクラス](#5-typescript-のクラス)
+  - [5.1 クラスの宣言と使用](#51-クラスの宣言と使用)
+    - [5.1.1 クラス宣言と new 構文](#511-クラス宣言と-new-構文)
+    - [5.1.2 プロパティを宣言する](#512-プロパティを宣言する)
+    - [5.1.3 メソッドを宣言する](#513-メソッドを宣言する)
+    - [5.1.4 コンストラクタ](#514-コンストラクタ)
+    - [5.1.5 静的プロパティ・静的メソッド](#515-静的プロパティ静的メソッド)
+    - [5.1.6 3種類のアクセシビリティ修飾子](#516-3種類のアクセシビリティ修飾子)
+    - [5.1.7 コンストラクタ引数でのプロパティ宣言](#517-コンストラクタ引数でのプロパティ宣言)
+    - [5.1.8 クラス式でクラスを作成する](#518-クラス式でクラスを作成する)
+    - [5.1.9 もう1つのプライベートプロパティ](#519-もう1つのプライベートプロパティ)
+    - [5.1.10 クラスの静的初期化ブロック](#5110-クラスの静的初期化ブロック)
+    - [5.1.11 型引数を持つクラス](#5111-型引数を持つクラス)
+  - [5.2 クラスの型](#52-クラスの型)
+    - [5.2.1 クラス宣言はインスタンスの型を作る](#521-クラス宣言はインスタンスの型を作る)
+    - [5.2.2 new シグネチャによるインスタンス化可視性の表現](#522-new-シグネチャによるインスタンス化可視性の表現)
+    - [5.2.3 instanceof 演算子と型の絞り込み](#523-instanceof-演算子と型の絞り込み)
+  - [5.3 クラスの継承](#53-クラスの継承)
+    - [5.3.1 継承(1) 子は親の機能を受け継ぐ](#531-継承1-子は親の機能を受け継ぐ)
+    - [5.3.2 継承(2) 親の機能を上書きする](#532-継承2-親の機能を上書きする)
+    - [5.3.3 override 修飾子とその威力](#533-override-修飾子とその威力)
+    - [5.3.4 private と protected の動作と使いどころ](#534-private-と-protected-の動作と使いどころ)
+    - [5.3.5 implements キーワードによるクラスの型のチェック](#535-implements-キーワードによるクラスの型のチェック)
+  - [5.4 this](#54-this)
+    - [5.4.1 関数の中の this は呼び出し方によって決まる](#541-関数の中の-this-は呼び出し方によって決まる)
+    - [5.4.2 アロー関数における this](#542-アロー関数における-this)
+    - [5.4.3 this を操作するメソッド](#543-this-を操作するメソッド)
+    - [5.4.4 関数の中以外の this](#544-関数の中以外の-this)
+  - [5.5 例外処理](#55-例外処理)
+    - [5.5.3 例外処理と大域脱出](#553-例外処理と大域脱出)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1009,3 +1039,602 @@ const repeat = function<T>(element: T, length: number): T[] {
 - ブロックの範囲に対して発生
 - ブロック：`{...}` という形をもつ文の一種
   - `if` や `for` のあとの `{}` がそれに該当
+
+# 5. TypeScript のクラス
+## 5.1 クラスの宣言と使用
+- クラスの主な用途はオブジェクトの作成
+- クラスによって作成されたオブジェクト = インスタンス（instance）
+### 5.1.1 クラス宣言と new 構文
+- クラス宣言
+  - `class クラス名 {...}`
+  - クラス名には変数名や関数名と同様に識別子を利用することが可能
+  - `...` の部分はクラス定義の本体
+    - インスタンスがどのようなプロパティを持つか規定
+  - `new クラス名()` という式により，クラスのインスタンスを作成できる
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+
+const uhyo = new User()
+console.log(uhyo.name) // "" が表示される
+console.log(uhyo.age) // 0 が表示される
+
+uhyo.age = 26
+console.log(uhyo.age) // 26 が表示される
+
+```
+
+### 5.1.2 プロパティを宣言する
+- プロパティ宣言
+  - ここで宣言されたプロパティは，new によって作成されたインスタンスにあらかじめ備わっている
+  - プロパティ宣言の基本の形は `プロパティ:型 = 式`
+
+### 5.1.3 メソッドを宣言する
+- クラス宣言の中では，メソッド (method) の宣言も書くことができる
+- クラス宣言の中にメソッドの宣言を書くと，そのクラスのインスタンスは自動的にそのメソッドを持った状態で作成される
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+
+  setAge(newAge: number) {
+    this.age = newAge
+  }
+}
+
+const uhyo = new User()
+console.log(uhyo.isAdult()) // false が表示される
+uhyo.setAge(26)
+console.log(uhyo.isAdult()) // true が表示される
+```
+
+### 5.1.4 コンストラクタ
+- コンストラクタ
+  - `new` により作成される際に呼び出される関数
+  - インスタンスのプロパティを初期化することができる
+  - クラス宣言の中に `constructor` という名前のメソッド宣言を書く
+```ts
+class User {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name)
+console.log(uhyo.isAdult)
+```
+
+### 5.1.5 静的プロパティ・静的メソッド
+静的メソッド・静的プロパティ
+- インスタンスではなく**クラスそのもの**に属するプロパティ・メソッド
+- 通常のプロパティ・メソッドの宣言の前に static とつけて宣言
+```ts
+class User {
+  static adminName: string = "uhyo"
+  static getAdminUser() {
+    return new User(User.adminName,26)
+  }
+
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+}
+
+console.log(User.adminName) // "uhyo" が表示される
+const admin = User.getAdminUser()
+console.log(admin.age) // 26 が表示される
+console.log(admin.isAdult()) // true が表示される
+
+const uhyo = new User("uhyo", 26)
+
+// エラー：Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
+console.log(uhyo.adminName)
+```
+
+### 5.1.6 3種類のアクセシビリティ修飾子
+- クラス宣言内のプロパティ宣言・メソッド宣言にはアクセシビリティ修飾子を孵化することができる
+  - public（あるいは何も書かない場合）
+  - protected
+    - クラス自身だけでなく，そのクラスを継承するクラスからもアクセスできる
+  - private
+    - クラス内部からしかアクセスできない
+
+### 5.1.7 コンストラクタ引数でのプロパティ宣言
+```ts
+class User {
+  name: string
+  private age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+}
+
+// 省略すると次のようになる
+class User {
+  constructor(public name: string, private age: number){}
+}
+```
+### 5.1.8 クラス式でクラスを作成する
+クラス式
+- クラス宣言と同様の構文を式として使用できる
+- ただし，クラス名の識別子部分を省略可
+  - `class {...}`
+```ts
+const User = class {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+  public isAdlut(): boolean {
+    return this.age >=  20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name)
+console.log(uhyo.isAdult())
+```
+
+### 5.1.9 もう1つのプライベートプロパティ
+プライベートプロパティ
+- クラスの内部からしか参照できないプロパティ
+- `#プロパティ名` のように先頭に `#` をつけた名前のプロパティは `private` プロパティと同様にそのクラス中でのみアクセス可能
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+const uhyo = new User("uhyo", 26)
+console.log(uhyo.name) // "uhyo" が表示される
+console.log(uhyo.isAdult()) // true が表示される
+// エラー： Property '#age' is not accessible outside class 'User' because it has a private identifier.
+console.log(uhyo.#age)
+```
+
+### 5.1.10 クラスの静的初期化ブロック
+静的初期化ブロック(static initialization block)
+- 俗にいう static block
+- クラス宣言の中に `static{...}` という構文を書ける
+```ts
+console.log("Hello")
+class C {
+  static {
+    console.log("uhyo")
+  }
+}
+console.log("world")
+```
+
+### 5.1.11 型引数を持つクラス
+```ts
+class User<T> {
+  name: string
+  #age: number
+  readonly data: T
+
+  constructor(name: string, age: number, data: T){
+    this.name = name
+    this.#age = age
+    this.data = data
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+// uhyo は User<string> 型
+const uhyo = new User<string>("uhyo", 26, "追加データ")
+
+// data は string 型
+const data = uhyo.data
+
+// john は　User<{num: number}> 型
+const john = new User("John Smith", 15, {num: 123})
+
+// data2 は {num: number} 型
+const data2 = john.data
+```
+
+## 5.2 クラスの型
+### 5.2.1 クラス宣言はインスタンスの型を作る
+クラス宣言の特徴
+- クラスオブジェクトという値を作るものであると同時に，インスタンスの型を宣言するものである
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+
+  isAdult(): boolean {
+    return this.age >= 20
+  }
+}
+
+// uhyo は User 型
+const uhyo = new User();
+```
+- このように，クラス宣言で User というクラスを作成した場合は同時に同じ名前のUser型も作成される
+  - クラスのオブジェクトの実体と，そのインスタンスを表す型をセットで作成できるのがクラス宣言の型システム的な特徴
+- User 型，すなわち User クラスのインスタンスの特徴は，実際には「string 型のプロパティ name と number 型のプロパティ age を持ち，()=>boolean型 の isAdult メソッドを持つ」
+  - new User で作られていないオブジェクト（User のインスタンスではないオブジェクト）でもこの特徴を満たすものは User 型として扱うことができる
+  - クラス宣言に特有の挙動であり，クラス式にはそのような効果はないので注意
+
+### 5.2.2 new シグネチャによるインスタンス化可視性の表現
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+
+type MyUserConstructor = new() => User
+
+// User は　MyUserConstructor 型を持つ
+const MyUser: MyUserConstructor = User
+
+// MyUser は new で使用可能
+const u = new MyUser();
+
+// u は User 型を持つ
+console.log(u.name, u.age)
+```
+
+### 5.2.3 instanceof 演算子と型の絞り込み
+instanceof 演算子
+- 与えられたオブジェクトがあるクラスのインスタンスかどうかを判定
+- `値 instanceof クラスオブジェクト`
+- 返り値は真偽値
+  - 値が与え得られたクラスオブジェクトのインスタンスなら `true`，そうでなければ `false`
+```ts
+class User {
+  name: string = ""
+  age: number = 0
+}
+const uhyo = new User()
+// uhyo は User のインスタンスなので true
+console.log(uhyo instanceof User)
+// {} は User のインスタンスではないので false
+console.log({} instanceof User)
+
+const john: User = {
+  name: "John Smith",
+  age: 15
+}
+
+// john は User のインスタンスではないので false
+console.log(john instanceof User)
+```
+- instanceof 演算子は型の絞り込みをサポート
+```ts
+type HasAge = {
+  age: number
+}
+
+class User {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+}
+
+function getPrice(customer: HasAge){
+  if(customer instanceof User) {
+    if(customer.name === "uhyo") {
+      return 0
+    }
+  }
+  return customer.age < 18 ? 1000 : 1800
+}
+
+const customer1: HasAge = {age:15}
+const customer2: HasAge = {age:40}
+const uhyo = new User("uhyo", 26)
+
+console.log(getPrice(customer1)) // 1000
+console.log(getPrice(customer2)) // 1800
+console.log(getPrice(uhyo)) // 0
+```
+
+## 5.3 クラスの継承
+### 5.3.1 継承(1) 子は親の機能を受け継ぐ
+`class クラス名 extends 親クラス {...}`
+- クラス式　の場合はクラス名が省略できる
+  - `class extends 親クラス`
+```ts 
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+}
+
+const uhyo = new PremiumUser("uhyo", 26)
+console.log(uhyo.rank) // 1
+console.log(uhyo.name) // uhyo
+console.log(uhyo.isAdult()) // true
+```
+
+### 5.3.2 継承(2) 親の機能を上書きする
+子クラスは親クラスの機能を上書きすることができる
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+
+// ここでAdultを再宣言
+  public isAdult(): boolean {
+    return true
+  }
+}
+
+const john = new User("John Smith", 15)
+const taro = new PremiumUser("Taro Yamada", 15)
+
+console.log(john.isAdult()) // false
+console.log(taro.isAdult()) // true
+```
+- 子クラスのインスタンスは親クラスのインスタンスの部分型でなければいけない
+  - `PremiumUser` は `User` を拡張したものである以上，`User` として利用可能でなければいけない
+  - `User` クラスの `isAdult` は `() => boolean` 型なので，`PremiumUser` クラスの `isAdult` はこれに一致する
+
+また，コンストラクタもオーバーライドすることができる
+- その場合は子クラスのコンストラクタの中に super 呼び出しを含める必要がある
+```ts
+class PremiumUser extends User {
+  rank: number
+
+  constructor(name: string, age: number, rank: number) {
+    super(name, age) // 親クラスのコンストラクタを呼び出すための特別な構文
+    this.rank = rank
+  }
+}
+
+const uhyo = new PremiumUser("uhyo", 26, 3)
+console.log(uhyo.name) // uhyo
+console.log(uhyo.rank) // 3
+```
+
+### 5.3.3 override 修飾子とその威力
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+
+class PremiumUser extends User {
+  rank: number = 1
+  public override isAdult(): boolean {
+    return true
+  }
+}
+```
+override 修飾子と inImplicitOverride コンパイラオプションにより，「オーバーライドしたつもりができていなかった」あるいは「オーバーライドするつもりがないのにオーバーライドしてしまった」というミスを防ぐことができる
+
+### 5.3.4 private と protected の動作と使いどころ
+protected
+- 外部からはアクセスできないが子クラスからはアクセスできるプロパティ・メソッド
+- クラスの外（インスタンスを使うだけのプログラム）からはアクセスされたくないが，子クラスがロジックを拡張することを許す場合に適している
+  - ただし，子クラスによる影響を考えた上で親クラスのロジックを実装する必要がある
+
+private および #
+- 子クラスからもアクセスできない
+
+### 5.3.5 implements キーワードによるクラスの型のチェック
+クラスを作成する際には implements キーワードによる追加の型を利用可能
+- `class クラス名 implements 型 {...}`
+- 継承と併用する場合は extends よりあとに implements を書く
+```ts
+type HasName ={
+  name: string
+}
+
+class User implements HasName {
+  name: string
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+```
+User の定義を変えて User 型から name プロパティを消すと，次のようにコンパイルエラーが発生する
+```ts
+type HasName ={
+  name: string
+}
+
+// エラー：Class 'User' incorrectly implements interface 'HasName'.
+// Property 'name' is missing in type 'User' but required in type 'HasName'.
+class User implements HasName {
+  #age: number
+
+  constructor(name: string, age: number) {
+    this.#age = age
+  }
+  public isAdult(): boolean {
+    return this.#age >= 20
+  }
+}
+```
+
+## 5.4 this
+### 5.4.1 関数の中の this は呼び出し方によって決まる
+this
+- 基本的には自分自身を表すオブジェクトであり，主にメソッドの中で使用
+- this が具体的に何を指すのかは**関数の呼び出し方によって決定**
+
+メソッド
+- オブジェクトのプロパティに入った関数オブジェクト
+  - `オブジェクト.メソッド名` の形で参照
+  - この時の `.` の左のオブジェクトがその中（メソッドの中）での `this`
+
+### 5.4.2 アロー関数における this
+アロー関数は this を外側の関数から引き継ぐ
+- つまり，アロー関数は自分自身の this を持たない
+
+### 5.4.3 this を操作するメソッド
+apply メソッドと call メソッド
+- 関数の中での this を指定しつつ関数呼び出しを行う
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor (name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult (): boolean {
+    return this.#age >= 20
+  }
+}
+
+const uhyo = new User('uhyo', 25)
+const john = new User('John Smith', 15)
+
+console.log(uhyo.isAdult())
+
+// john を this として，uhyo543.isAdult() を呼び出す
+console.log(uhyo.isAdult.apply(john, []))
+
+```
+Reflect.apply
+- Reflect はグローバル変数としてあらかじめ用意されているオブジェクト
+- `func.apply(obj, args)` <---> `Reflect.apply(func, obj, args)`
+  - `uhyo.isAdult.apply(john, [])` <---> `Reflect.apply(uhyo.isAdult, john, [])`
+- Reflect.call はない
+
+bind
+- もとの関数と同じ処理をするが，this が固定されている新しい関数オブジェクトを作る
+  - `func.bind(obj)` とした場合，返り値として「呼び出し時の this が obj に固定された func 関数」が得られる
+  ```ts
+  class User {
+    name: string
+    #age: number
+
+    constructor(name: string, age: number) {
+      this.name = name
+      this.#age = age
+    }
+
+    public isAdult(): boolean {
+      return this.#age >= 20
+    }
+  }
+  
+  const uhyo = new User('uhyo', 25)
+  const john = new User('John Smith', 15)
+
+  // this が uhyo に固定された isAdult
+  const boundlsAdult = uhyo.isAdult.bind(uhyo)
+
+  console.log(boundlsAdult()) // true
+  console.log(boundlsAdult.call(john)) // this が uhyo なので true
+  ```
+
+### 5.4.4 関数の中以外の this
+トップレベル（他の関数の中ではない場所）
+- this は undefined
+
+クラス宣言内
+- プロパティ宣言の初期値指定での this は new 時に作られるインスタンス
+  ```ts
+  class A {
+    foo = 123
+    bar = this.foo + 100
+  }
+  const obj = new A()
+  console.log(obj.bar) // 223
+  ```
+- メソッドの this は「関数の中の this 」
+- 静的プロパティの初期化式の中や静的初期化ブロック(static ブロック)の this はクラスオブジェクトそのもの
+  ```ts
+  class A {
+    static foo = 123
+    static bar = this.foo * 2
+    static {
+      console.log('bar is', this.bar) // 'bar is 246'
+    }
+  }
+  ```
+
+## 5.5 例外処理
+### 5.5.3 例外処理と大域脱出
+大域脱出：その場で実行を中断して別の場所にプログラムの制御を移すこと
+- エラーが発生した場合は「上から順番にプログラムを実行する」という挙動を逸脱し，一気に別の場所に制御が移ることになる
+- 例外が大域脱出を発生させることで，複数箇所で発生した例外を１箇所で処理できる
