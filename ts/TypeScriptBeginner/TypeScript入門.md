@@ -90,6 +90,11 @@
     - [5.3.3 override 修飾子とその威力](#533-override-修飾子とその威力)
     - [5.3.4 private と protected の動作と使いどころ](#534-private-と-protected-の動作と使いどころ)
     - [5.3.5 implements キーワードによるクラスの型のチェック](#535-implements-キーワードによるクラスの型のチェック)
+  - [5.4 this](#54-this)
+    - [5.4.1 関数の中の this は呼び出し方によって決まる](#541-関数の中の-this-は呼び出し方によって決まる)
+    - [5.4.2 アロー関数における this](#542-アロー関数における-this)
+    - [5.4.3 this を操作するメソッド](#543-this-を操作するメソッド)
+    - [5.4.4 関数の中以外の this](#544-関数の中以外の-this)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1523,3 +1528,106 @@ class User implements HasName {
   }
 }
 ```
+
+## 5.4 this
+### 5.4.1 関数の中の this は呼び出し方によって決まる
+this
+- 基本的には自分自身を表すオブジェクトであり，主にメソッドの中で使用
+- this が具体的に何を指すのかは**関数の呼び出し方によって決定**
+
+メソッド
+- オブジェクトのプロパティに入った関数オブジェクト
+  - `オブジェクト.メソッド名` の形で参照
+  - この時の `.` の左のオブジェクトがその中（メソッドの中）での `this`
+
+### 5.4.2 アロー関数における this
+アロー関数は this を外側の関数から引き継ぐ
+- つまり，アロー関数は自分自身の this を持たない
+
+### 5.4.3 this を操作するメソッド
+apply メソッドと call メソッド
+- 関数の中での this を指定しつつ関数呼び出しを行う
+```ts
+class User {
+  name: string
+  #age: number
+
+  constructor (name: string, age: number) {
+    this.name = name
+    this.#age = age
+  }
+
+  public isAdult (): boolean {
+    return this.#age >= 20
+  }
+}
+
+const uhyo = new User('uhyo', 25)
+const john = new User('John Smith', 15)
+
+console.log(uhyo.isAdult())
+
+// john を this として，uhyo543.isAdult() を呼び出す
+console.log(uhyo.isAdult.apply(john, []))
+
+```
+Reflect.apply
+- Reflect はグローバル変数としてあらかじめ用意されているオブジェクト
+- `func.apply(obj, args)` <---> `Reflect.apply(func, obj, args)`
+  - `uhyo.isAdult.apply(john, [])` <---> `Reflect.apply(uhyo.isAdult, john, [])`
+- Reflect.call はない
+
+bind
+- もとの関数と同じ処理をするが，this が固定されている新しい関数オブジェクトを作る
+  - `func.bind(obj)` とした場合，返り値として「呼び出し時の this が obj に固定された func 関数」が得られる
+  ```ts
+  class User {
+    name: string
+    #age: number
+
+    constructor(name: string, age: number) {
+      this.name = name
+      this.#age = age
+    }
+
+    public isAdult(): boolean {
+      return this.#age >= 20
+    }
+  }
+  
+  const uhyo = new User('uhyo', 25)
+  const john = new User('John Smith', 15)
+
+  // this が uhyo に固定された isAdult
+  const boundlsAdult = uhyo.isAdult.bind(uhyo)
+
+  console.log(boundlsAdult()) // true
+  console.log(boundlsAdult.call(john)) // this が uhyo なので true
+  ```
+
+### 5.4.4 関数の中以外の this
+トップレベル（他の関数の中ではない場所）
+- this は undefined
+
+クラス宣言内
+- プロパティ宣言の初期値指定での this は new 時に作られるインスタンス
+  ```ts
+  class A {
+    foo = 123
+    bar = this.foo + 100
+  }
+  const obj = new A()
+  console.log(obj.bar) // 223
+  ```
+- メソッドの this は「関数の中の this 」
+- 静的プロパティの初期化式の中や静的初期化ブロック(static ブロック)の this はクラスオブジェクトそのもの
+  ```ts
+  class A {
+    static foo = 123
+    static bar = this.foo * 2
+    static {
+      console.log('bar is', this.bar) // 'bar is 246'
+    }
+  }
+  ```
+
