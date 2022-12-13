@@ -105,6 +105,12 @@
     - [6.1.4 ユニオン型とインターセクション型の表裏一体な関係](#614-ユニオン型とインターセクション型の表裏一体な関係)
     - [6.1.5 オプショナルプロパティ再訪](#615-オプショナルプロパティ再訪)
     - [6.1.6 オプショナルチェイニングによるプロパティアクセス](#616-オプショナルチェイニングによるプロパティアクセス)
+  - [6.2 リテラル型](#62-リテラル型)
+    - [6.2.1 ４種類のリテラル型](#621-４種類のリテラル型)
+    - [6.2.2 テンプレートリテラル型](#622-テンプレートリテラル型)
+    - [6.2.3 ユニオン型とリテラル型を組み合わせて使うケース](#623-ユニオン型とリテラル型を組み合わせて使うケース)
+    - [6.2.4 リテラル型の widening](#624-リテラル型の-widening)
+    - [6.2.5 widening されるリテラル型・ widening されないリテラル型](#625-widening-されるリテラル型-widening-されないリテラル型)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1821,3 +1827,110 @@ exactOptionalPropertyTypes
 - プロパティアクセスの亜種
 - `onj.prop` の代わりに `obj?.prop` と書く
 - アクセスされるオブジェクトが null や undefined でも使用できる
+
+## 6.2 リテラル型
+### 6.2.1 ４種類のリテラル型
+リテラル型 = プリミティブ型をさらに細分化した型
+```ts
+type FooString = "foo" // これは "foo" という文字列のみが属するリテラル型
+
+const foo: FooString = "foo" // これは OK
+
+const bar: FooString = "bar" // エラー： Type "bar" is not assignable to type "foo".
+```
+```ts
+// 文字列のリテラル型
+//  変数名 リテラル型   値
+const foo: "foo" = "foo"
+
+// 数値のリテラル型
+const one: 1 = 1
+
+// 真偽値のリテラル型
+const t: true = true
+
+// BigInt のリテラル型
+const three: 3n = 3n
+```
+### 6.2.2 テンプレートリテラル型
+テンプレートリテラル型はバッククオートで囲まれたテンプレート文字列リテラルのような構文を持つ
+- ただし，`${}` の中に入るのは式ではなく型
+  - `Hello ${string}!` の `string` は型を指す
+```ts
+function getHelloStr(): `Hello, ${string}!` {
+  const rand = Math.random()
+  if (rand < 0.3) {
+    return "Hello, world!"
+  } else if (rand < 0.6) {
+    return "Hello, my world!"
+  }else if (rand < 0.9) {
+    // エラー： Type "Hello, world" is not assignable to type '`Hello, ${string}!`'
+    return "Hello, world"
+  } else {
+    // エラー： Type "Hell, world" is not assignable to type '`Hello, ${string}!`'
+    return "Hell, world!"
+  }
+}
+```
+
+### 6.2.3 ユニオン型とリテラル型を組み合わせて使うケース
+TypeScript における頻出パターン
+- リテラル型のユニオン型を作る
+  - enum に近いのか？
+    - https://weseek.co.jp/tech/1609/
+    - https://zenn.dev/mongolyy/articles/7a29ec7b611c0b
+  ```ts
+  function signNumber(type: "plus" | "minus") {
+    return type === "plus" ? 1 : -1
+  }
+  
+  console.log(signNumber("plus"))
+  console.log(signNumber("minus"))
+  // エラー： Argument of type "uhyo" is not assignable to parameter of type "plus" | "minus".
+  console.log(signNumber("uhyo")) 
+  ```
+
+### 6.2.4 リテラル型の widening
+リテラル型が自動的に，対応するプリミティブ型に変化する（広げられる）という挙動
+- 式としてのリテラルが let で宣言された変数に代入されたとき
+  ```ts
+  // 変数 uhyo1 は "uhyo" 型
+  const uhyo1 = "uhyo"
+  // 変数 uhyo2 は string 型
+  let uhyo2 = "uhyo"
+  ```
+  - そもそも，変数の型が型推論によって決められる場合，その変数の型は変数の初期化子（ = の右側の式）になる
+    - 変数が const で宣言された場合はこれが採用
+  - let で宣言された場合は，「変数の方がリテラル型に推論されそうなプリミティブ型に変換する」という処理が行われる
+    - リテラル型の widening
+    - let で宣言された変数は後で再代入がされることが期待されるため
+- オブジェクトリテラルの中
+  ```ts
+  const uhyo = {
+    name: "uhyo",
+    age: 26
+  }
+  ```
+  - 実際に name プロパティに入っているのは "uhyo"，age プロパティに入っているのは 26 にも関わらず，型は `{name: string, age: number}`
+    - オブジェクトリテラルの型が推論されるとき，各プロパティの型がリテラル型となる場合は widening される
+    - let の変数と同様に後から書き換えが可能であるため
+
+### 6.2.5 widening されるリテラル型・ widening されないリテラル型
+widening されるリテラル型
+- 式としてのリテラルに対して型推論されたもの
+
+widening されないリテラル型
+- プログラマが明示的に書いたもの
+```ts
+// これは widening される "uhyo" 型
+const uhyo1 = "uhyo"
+
+// これは widening されない "uhyo" 型
+const uhyo2: "uhyo" = "uhyo"
+
+// これは string 型
+let uhyo3 = uhyo1
+
+// これは uhyo 型
+let uhyo4 = uhyo2
+```
