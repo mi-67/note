@@ -97,6 +97,14 @@
     - [5.4.4 関数の中以外の this](#544-関数の中以外の-this)
   - [5.5 例外処理](#55-例外処理)
     - [5.5.3 例外処理と大域脱出](#553-例外処理と大域脱出)
+  - [6. 高度な型](#6-高度な型)
+  - [6.1 ユニオン型とインターセクション型](#61-ユニオン型とインターセクション型)
+    - [6.1.1 ユニオン型の基本](#611-ユニオン型の基本)
+    - [6.1.2 伝播するユニオン型](#612-伝播するユニオン型)
+    - [6.1.3 インターセクション型とは](#613-インターセクション型とは)
+    - [6.1.4 ユニオン型とインターセクション型の表裏一体な関係](#614-ユニオン型とインターセクション型の表裏一体な関係)
+    - [6.1.5 オプショナルプロパティ再訪](#615-オプショナルプロパティ再訪)
+    - [6.1.6 オプショナルチェイニングによるプロパティアクセス](#616-オプショナルチェイニングによるプロパティアクセス)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1149,7 +1157,7 @@ console.log(admin.isAdult()) // true が表示される
 
 const uhyo = new User("uhyo", 26)
 
-// エラー：Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
+// エラー： Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
 console.log(uhyo.adminName)
 ```
 
@@ -1517,7 +1525,7 @@ type HasName ={
   name: string
 }
 
-// エラー：Class 'User' incorrectly implements interface 'HasName'.
+// エラー： Class 'User' incorrectly implements interface 'HasName'.
 // Property 'name' is missing in type 'User' but required in type 'HasName'.
 class User implements HasName {
   #age: number
@@ -1638,3 +1646,178 @@ bind
 大域脱出：その場で実行を中断して別の場所にプログラムの制御を移すこと
 - エラーが発生した場合は「上から順番にプログラムを実行する」という挙動を逸脱し，一気に別の場所に制御が移ることになる
 - 例外が大域脱出を発生させることで，複数箇所で発生した例外を１箇所で処理できる
+
+## 6. 高度な型
+## 6.1 ユニオン型とインターセクション型
+### 6.1.1 ユニオン型の基本
+ユニオン型
+- 型T **または** 型U という表現ができる
+  ```ts
+  type Animal = {
+    species: string
+  }
+
+  type Human = {
+    name: string
+  }
+
+  type User = Animal|Human
+
+  // このオブジェクトは Animal 型なので User 型に代入可能
+  const tama: User = {
+    species: "Felis silvestris catus"
+  }
+
+  // このオブジェクトは Human 型なので User 型に代入可能
+  const uhyo: User = {
+    name: "uhyo"
+  }
+  ```
+- 存在しないかもしれないプロパティへのアクセスはコンパイルエラーになる
+  ```ts
+  function getName(user: User): string {
+    // エラー：Property 'name' does not exist on type 'User'.
+    // Property 'name' does not exist on type 'Animal'.
+    return user.name
+  }
+  ```
+
+### 6.1.2 伝播するユニオン型
+必ず存在するプロパティへのアクセス
+```ts
+type Animal = {
+  species: string
+  age: string
+}
+type Human = {
+  name: string
+  age: number
+}
+
+type User = Animal|Human
+
+const tama: User = {
+  species: "Felis silvestris catus",
+  age: "永遠の17歳"
+}
+
+const uhyo: User = {
+  name: "uhyo",
+  age: 26
+}
+
+function showAge(user: User) {
+  // コンパイルエラーは発生しない
+  // 型は string | number
+  const age = user.age
+}
+```
+
+### 6.1.3 インターセクション型とは
+インターセクション型
+- 型T **であり，かつ** 型U でもある という表現ができる
+- 原義は「かつ」だが，実際には「オブジェクト型を拡張した新しい型を作る」という用途で使われることが多くある
+  ```ts
+  type Animal = {
+    species: string
+    age: number
+  }
+
+  /*
+  type Human = {
+    species: string
+    age: number
+    name: string
+  } 
+  と同義
+   */
+  type Human = Animal & {
+    name: string
+  }
+
+
+  const tama: Animal = {
+    species: "Felis silvestris catus",
+    age: 3
+  }
+  const uhyo: Human = {
+    species: "Homo sapiens sapiens",
+    age: 26,
+    name: "uhyo"
+  }
+  ```
+異なるプリミティブ型同士のインターセクション型を作成した場合は never 型が出現
+- 簡単にいうと「属する値がない型」
+  ```ts
+  // string でありかつ number である型を作ることは不可能
+  type StringAndNumber = string & number
+  ```
+
+### 6.1.4 ユニオン型とインターセクション型の表裏一体な関係
+```ts
+type Human = {
+  name: string
+}
+type Animal = {
+  species: string
+}
+
+function getName(human: Human) {
+  return human.name
+}
+function getSpecies(animal: Animal) {
+  return animal.species
+}
+
+// 変数 mysteryFunc には getName が入るかもしれないし getSpecies が入るかもしれない
+// このとき，mysteryFunc の型は ((human:Human) => string) | ((animal: Animal) => string) となる
+const mysteryFunc = Math.random() < 0.5 ? getName : getSpecies
+```
+この時，mysteryFunc は Human を受け取るとは限らないので，Human を渡すことはできないし，同様に Animal を受け取るとも限らないので，Animal を渡すこともできない
+- mysteryFunc を呼び出そうとするとエラーが発生
+  ```ts
+  // エラー： Argument of type 'Human' is not assignable to parameter of type 'Human & Animal'.
+  // Property 'species' is missing in type 'Human' but required in type 'Animal'.
+  mysteryFunc(uhyo)
+
+
+  // Argument of type 'Human' is not assignable to parameter of type 'Human & Animal'. と書かれていることから，Human & Animal 型を渡してあげれば良い
+  const uhyo: Human & Animal = {
+    species: "Homo sapiens sapiens",
+    name: "uhyo"
+  }
+
+  // 問題なく呼び出せる
+  const value = mysteryFunc(uhyo)
+  console.log(value)
+  ```
+
+### 6.1.5 オプショナルプロパティ再訪
+- `age?:number`
+  - age はなくても許される
+- `age: number | undefined`
+  - age は undefined でもいいので必ず定義しなければいけない
+
+exactOptionalPropertyTypes
+- 有効になっている場合，`age?: number` のようなオプショナルプロパティに明示的に `undefined` が代入できなくなる
+
+  有効時
+  ||age?: number|age?: number &#124; undefined|age: number &#124; undefined|
+  |:-|:-:|:-:|:-:|
+  |age: 123|✅|✅|✅|
+  |age: undefined|✅|✅|✅|
+  |省略|✅|✅|❌|
+
+
+  無効時
+  ||age?: number|age?: number &#124; undefined|age: number &#124; undefined|
+  |:-|:-:|:-:|:-:|
+  |age: 123|✅|✅|✅|
+  |age: undefined|❌|✅|✅|
+  |省略|✅|✅|❌|
+
+### 6.1.6 オプショナルチェイニングによるプロパティアクセス
+オプショナルチェイニング
+- プロパティアクセスの亜種
+- `onj.prop` の代わりに `obj?.prop` と書く
+- アクセスされるオブジェクトが null や undefined でも使用できる
