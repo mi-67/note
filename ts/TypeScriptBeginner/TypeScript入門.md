@@ -113,6 +113,10 @@
     - [6.2.5 widening されるリテラル型・ widening されないリテラル型](#625-widening-されるリテラル型-widening-されないリテラル型)
   - [6.3 型の絞り込み](#63-型の絞り込み)
     - [6.3.3 代数的データ型をユニオン型で再現するテクニック](#633-代数的データ型をユニオン型で再現するテクニック)
+  - [6.4 keyof 型・ lookup 型](#64-keyof-型-lookup-型)
+    - [6.4.1 lookup 型とは](#641-lookup-型とは)
+    - [6.4.2 keyof 型とは](#642-keyof-型とは)
+    - [6.4.3 keyof 型・ lookup 型とジェネエリクス](#643-keyof-型-lookup-型とジェネエリクス)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1942,3 +1946,58 @@ let uhyo4 = uhyo2
 代数的データ型（algebraic data types; ADT）
 - いくつかの種類に分類されるデータを表すための型・データ構造
 - タグ付きユニオン，直和型といった別名がある
+
+## 6.4 keyof 型・ lookup 型
+### 6.4.1 lookup 型とは
+lookup 型
+- `T[K]` という構文をもつ型
+  - 多くの場合，`T` はオブジェクト型，`K` は文字列のリテラル型が用いられる
+- `T` というオブジェクト型が持つ `K` というプロパティの型
+
+### 6.4.2 keyof 型とは
+- 型から別の方を作ることができる機能
+- `keyof typeof T` という使い方が可能
+  ```ts
+  const mmConversionTable = {
+    mm: 1,
+    m: 1e3,
+    km: 1e6
+  }
+
+  // typeof mmConversionTable -> {mm:number; m:number; km:number}
+  // keyof typeof mmConversionTable -> mm | m | km
+  function convertUnits (value: number, unit: keyof typeof mmConversionTable): typeof mmConversionTable {
+    const mmValue = value * mmConversionTable[unit]
+    return {
+      mm: mmValue,
+      m: mmValue / 1e3,
+      km: mmValue / 1e6
+    }
+  }
+
+  console.log(convertUnits(5600, 'm')) // {"mm":5600000, "m":5600, "km":5.6}
+  ```
+
+### 6.4.3 keyof 型・ lookup 型とジェネエリクス
+typeof は型変数（型引数のように具体的な中身がわからない型）と組み合わせて使うことができる
+```ts
+function get<T, K extends keyof T> (obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+interface Human643 {
+  name: string
+  age: number
+}
+
+const uhyo643: Human643 = {
+  name: 'uhyo',
+  age: 26
+}
+
+// uhyoName は string 型
+const uhyoName = get(uhyo643, 'name')
+
+// uhyoAge は number 型
+const uhyoAge = get(uhyo643, 'age')
+```
