@@ -120,6 +120,10 @@
   - [6.5 as による型アサーション](#65-as-による型アサーション)
     - [6.5.1 型アサーションを用いて式の型をごまかす](#651-型アサーションを用いて式の型をごまかす)
     - [6.5.2 as const の用法](#652-as-const-の用法)
+  - [6.6 any 型と unknown 型](#66-any-型と-unknown-型)
+    - [6.6.1 any 型という最終兵器](#661-any-型という最終兵器)
+    - [6.6.2 any 型の存在理由](#662-any-型の存在理由)
+    - [6.6.3 any に近いが安全な unknown 型](#663-any-に近いが安全な-unknown-型)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2068,3 +2072,58 @@ const names1 = ["uhyo", "John", "Taro"]
 // readonly ["uhyo", "John", "Taro"]　型
 const names2 = ["uhyo", "John", "Taro"] as const
 ```
+
+## 6.6 any 型と unknown 型
+### 6.6.1 any 型という最終兵器
+any 型
+- 型チェックを無効化する型
+- TypeScript において最凶の危険性を誇る機能
+- "正しく"使う難易度は型アサーションよりもさらに上
+- IDE での補完サポートも効かなくなる
+```ts
+function doWhatever(obj: any) {
+  
+  // 好きなプロパティにアクセスできる
+  console.log(obj.user.name)
+
+  // 関数呼び出しもできる
+  obj()
+
+  // 計算もできる
+  const result = obj * 10
+  return result
+}
+
+// 全部コンパイルエラーが発生しないがランタイムエラーになる
+doWhatever(3)
+doWhatever({
+  user:{
+    name: "uhyo"
+  }
+})
+doWhatever(()=>{
+  console.log("hi")
+})
+```
+
+### 6.6.2 any 型の存在理由
+any 型が用意されている理由
+- JavaScript から TypeScript への移行を支援するため
+- 型をうまく表現できない場合のエスケープハッチとしての機能を持つため
+
+### 6.6.3 any に近いが安全な unknown 型
+unknown 型 = なんでもいれられる型
+- any 型は使う際に一切型チェックが行われず，なんでもできるように振る舞う一方，unknown 型の場合は正体が全く不明であるため，できることが制限される
+- 型の絞り込みをおこなって使うようにする
+  ```ts
+  function useUnknown(val: unknown) {
+    if(typeof val === 'string') {
+      // 型の絞り込みにより，ここでは val は string 型となる
+      console.log("val は文字列型です")
+      console.log(val.slice(0,5))
+    } else {
+      console.log("val は文字列型以外の何かです")
+      console.log(val)
+    }
+  }
+  ```
