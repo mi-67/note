@@ -117,6 +117,9 @@
     - [6.4.1 lookup 型とは](#641-lookup-型とは)
     - [6.4.2 keyof 型とは](#642-keyof-型とは)
     - [6.4.3 keyof 型・ lookup 型とジェネエリクス](#643-keyof-型-lookup-型とジェネエリクス)
+  - [6.5 as による型アサーション](#65-as-による型アサーション)
+    - [6.5.1 型アサーションを用いて式の型をごまかす](#651-型アサーションを用いて式の型をごまかす)
+    - [6.5.2 as const の用法](#652-as-const-の用法)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2000,4 +2003,68 @@ const uhyoName = get(uhyo643, 'name')
 
 // uhyoAge は number 型
 const uhyoAge = get(uhyo643, 'age')
+```
+
+## 6.5 as による型アサーション
+型アサーションの使用はできるだけ避けるべき
+- TypeScript が保証してくれる型安全性を意図的に破壊する機能であるため
+- ただし，TypeScript の型推論も完璧ではないためこの機能が存在する
+
+### 6.5.1 型アサーションを用いて式の型をごまかす
+型アサーション
+- `式 as 型` という構文
+- その式の形を強制的に変えるという意味
+
+よろしくない例
+```ts
+function getFirstLetters(strOrNum: string | number) {
+  const str = strOrNum as string // コンパイラ上の型を強制的に変化させる
+  return str.slice(0,5)
+}
+
+// uhyoh と表示される
+console.log(getFirstLetters("uhyohyohyo"))
+
+// ランタイムエラーが発生
+console.log(getFirstLetters(123))
+```
+良い例
+```ts
+type Animal = {
+  tag: "animal"
+  species: string
+}
+
+type Human = {
+  tag: "human"
+  name: string
+}
+
+type User = Animal | Human
+
+function getNamesIfAllHuman(users: readonly User[]): string[] | undefined {
+  if(users.every(user => user.tag === "human")) {
+    // この if 文の中での user は Human 型であることは確定しているので強制的に Human 型に変更
+    return (users as Human[]).map(user => user.name)
+  }
+  return undefined
+}
+```
+
+### 6.5.2 as const の用法
+as const
+- `式 as const` という構文
+- 型アサーションの 型 の部分が `const` に変わった形だが，これは型アサーションのように危険な機能ではない
+
+`式 as const` の「式」の型推論に対して及ぼす効果
+1. 配列リテラルの型推論結果を配列型ではなくタプル型にする
+2. オブジェクトリテラルから推論されるオブジェクト型は全てのプロパティが readonly になり，配列リテラルから推論されるタプル型も readonly タプル型になる
+3. 文字列・数値・BigInt・真偽値リテラルに対してつけられるリテラル型が widening しないリテラル型になる
+4. テンプレート文字列リテラルの型が string ではなくテンプレートリテラル型になる
+```ts
+// string[] 型
+const names1 = ["uhyo", "John", "Taro"]
+
+// readonly ["uhyo", "John", "Taro"]　型
+const names2 = ["uhyo", "John", "Taro"] as const
 ```
