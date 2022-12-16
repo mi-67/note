@@ -97,6 +97,33 @@
     - [5.4.4 関数の中以外の this](#544-関数の中以外の-this)
   - [5.5 例外処理](#55-例外処理)
     - [5.5.3 例外処理と大域脱出](#553-例外処理と大域脱出)
+  - [6. 高度な型](#6-高度な型)
+  - [6.1 ユニオン型とインターセクション型](#61-ユニオン型とインターセクション型)
+    - [6.1.1 ユニオン型の基本](#611-ユニオン型の基本)
+    - [6.1.2 伝播するユニオン型](#612-伝播するユニオン型)
+    - [6.1.3 インターセクション型とは](#613-インターセクション型とは)
+    - [6.1.4 ユニオン型とインターセクション型の表裏一体な関係](#614-ユニオン型とインターセクション型の表裏一体な関係)
+    - [6.1.5 オプショナルプロパティ再訪](#615-オプショナルプロパティ再訪)
+    - [6.1.6 オプショナルチェイニングによるプロパティアクセス](#616-オプショナルチェイニングによるプロパティアクセス)
+  - [6.2 リテラル型](#62-リテラル型)
+    - [6.2.1 ４種類のリテラル型](#621-４種類のリテラル型)
+    - [6.2.2 テンプレートリテラル型](#622-テンプレートリテラル型)
+    - [6.2.3 ユニオン型とリテラル型を組み合わせて使うケース](#623-ユニオン型とリテラル型を組み合わせて使うケース)
+    - [6.2.4 リテラル型の widening](#624-リテラル型の-widening)
+    - [6.2.5 widening されるリテラル型・ widening されないリテラル型](#625-widening-されるリテラル型-widening-されないリテラル型)
+  - [6.3 型の絞り込み](#63-型の絞り込み)
+    - [6.3.3 代数的データ型をユニオン型で再現するテクニック](#633-代数的データ型をユニオン型で再現するテクニック)
+  - [6.4 keyof 型・ lookup 型](#64-keyof-型-lookup-型)
+    - [6.4.1 lookup 型とは](#641-lookup-型とは)
+    - [6.4.2 keyof 型とは](#642-keyof-型とは)
+    - [6.4.3 keyof 型・ lookup 型とジェネエリクス](#643-keyof-型-lookup-型とジェネエリクス)
+  - [6.5 as による型アサーション](#65-as-による型アサーション)
+    - [6.5.1 型アサーションを用いて式の型をごまかす](#651-型アサーションを用いて式の型をごまかす)
+    - [6.5.2 as const の用法](#652-as-const-の用法)
+  - [6.6 any 型と unknown 型](#66-any-型と-unknown-型)
+    - [6.6.1 any 型という最終兵器](#661-any-型という最終兵器)
+    - [6.6.2 any 型の存在理由](#662-any-型の存在理由)
+    - [6.6.3 any に近いが安全な unknown 型](#663-any-に近いが安全な-unknown-型)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -1149,7 +1176,7 @@ console.log(admin.isAdult()) // true が表示される
 
 const uhyo = new User("uhyo", 26)
 
-// エラー：Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
+// エラー： Property 'adminName' does not exist on type 'User'. Did you mean to access the static member 'User.adminName' instead?
 console.log(uhyo.adminName)
 ```
 
@@ -1517,7 +1544,7 @@ type HasName ={
   name: string
 }
 
-// エラー：Class 'User' incorrectly implements interface 'HasName'.
+// エラー： Class 'User' incorrectly implements interface 'HasName'.
 // Property 'name' is missing in type 'User' but required in type 'HasName'.
 class User implements HasName {
   #age: number
@@ -1638,3 +1665,465 @@ bind
 大域脱出：その場で実行を中断して別の場所にプログラムの制御を移すこと
 - エラーが発生した場合は「上から順番にプログラムを実行する」という挙動を逸脱し，一気に別の場所に制御が移ることになる
 - 例外が大域脱出を発生させることで，複数箇所で発生した例外を１箇所で処理できる
+
+## 6. 高度な型
+## 6.1 ユニオン型とインターセクション型
+### 6.1.1 ユニオン型の基本
+ユニオン型
+- 型T **または** 型U という表現ができる
+  ```ts
+  type Animal = {
+    species: string
+  }
+
+  type Human = {
+    name: string
+  }
+
+  type User = Animal|Human
+
+  // このオブジェクトは Animal 型なので User 型に代入可能
+  const tama: User = {
+    species: "Felis silvestris catus"
+  }
+
+  // このオブジェクトは Human 型なので User 型に代入可能
+  const uhyo: User = {
+    name: "uhyo"
+  }
+  ```
+- 存在しないかもしれないプロパティへのアクセスはコンパイルエラーになる
+  ```ts
+  function getName(user: User): string {
+    // エラー：Property 'name' does not exist on type 'User'.
+    // Property 'name' does not exist on type 'Animal'.
+    return user.name
+  }
+  ```
+
+### 6.1.2 伝播するユニオン型
+必ず存在するプロパティへのアクセス
+```ts
+type Animal = {
+  species: string
+  age: string
+}
+type Human = {
+  name: string
+  age: number
+}
+
+type User = Animal|Human
+
+const tama: User = {
+  species: "Felis silvestris catus",
+  age: "永遠の17歳"
+}
+
+const uhyo: User = {
+  name: "uhyo",
+  age: 26
+}
+
+function showAge(user: User) {
+  // コンパイルエラーは発生しない
+  // 型は string | number
+  const age = user.age
+}
+```
+
+### 6.1.3 インターセクション型とは
+インターセクション型
+- 型T **であり，かつ** 型U でもある という表現ができる
+- 原義は「かつ」だが，実際には「オブジェクト型を拡張した新しい型を作る」という用途で使われることが多くある
+  ```ts
+  type Animal = {
+    species: string
+    age: number
+  }
+
+  /*
+  type Human = {
+    species: string
+    age: number
+    name: string
+  } 
+  と同義
+   */
+  type Human = Animal & {
+    name: string
+  }
+
+
+  const tama: Animal = {
+    species: "Felis silvestris catus",
+    age: 3
+  }
+  const uhyo: Human = {
+    species: "Homo sapiens sapiens",
+    age: 26,
+    name: "uhyo"
+  }
+  ```
+異なるプリミティブ型同士のインターセクション型を作成した場合は never 型が出現
+- 簡単にいうと「属する値がない型」
+  ```ts
+  // string でありかつ number である型を作ることは不可能
+  type StringAndNumber = string & number
+  ```
+
+### 6.1.4 ユニオン型とインターセクション型の表裏一体な関係
+```ts
+type Human = {
+  name: string
+}
+type Animal = {
+  species: string
+}
+
+function getName(human: Human) {
+  return human.name
+}
+function getSpecies(animal: Animal) {
+  return animal.species
+}
+
+// 変数 mysteryFunc には getName が入るかもしれないし getSpecies が入るかもしれない
+// このとき，mysteryFunc の型は ((human:Human) => string) | ((animal: Animal) => string) となる
+const mysteryFunc = Math.random() < 0.5 ? getName : getSpecies
+```
+この時，mysteryFunc は Human を受け取るとは限らないので，Human を渡すことはできないし，同様に Animal を受け取るとも限らないので，Animal を渡すこともできない
+- mysteryFunc を呼び出そうとするとエラーが発生
+  ```ts
+  // エラー： Argument of type 'Human' is not assignable to parameter of type 'Human & Animal'.
+  // Property 'species' is missing in type 'Human' but required in type 'Animal'.
+  mysteryFunc(uhyo)
+
+
+  // Argument of type 'Human' is not assignable to parameter of type 'Human & Animal'. と書かれていることから，Human & Animal 型を渡してあげれば良い
+  const uhyo: Human & Animal = {
+    species: "Homo sapiens sapiens",
+    name: "uhyo"
+  }
+
+  // 問題なく呼び出せる
+  const value = mysteryFunc(uhyo)
+  console.log(value)
+  ```
+
+### 6.1.5 オプショナルプロパティ再訪
+- `age?:number`
+  - age はなくても許される
+- `age: number | undefined`
+  - age は undefined でもいいので必ず定義しなければいけない
+
+exactOptionalPropertyTypes
+- 有効になっている場合，`age?: number` のようなオプショナルプロパティに明示的に `undefined` が代入できなくなる
+
+  有効時
+  ||age?: number|age?: number &#124; undefined|age: number &#124; undefined|
+  |:-|:-:|:-:|:-:|
+  |age: 123|✅|✅|✅|
+  |age: undefined|✅|✅|✅|
+  |省略|✅|✅|❌|
+
+
+  無効時
+  ||age?: number|age?: number &#124; undefined|age: number &#124; undefined|
+  |:-|:-:|:-:|:-:|
+  |age: 123|✅|✅|✅|
+  |age: undefined|❌|✅|✅|
+  |省略|✅|✅|❌|
+
+### 6.1.6 オプショナルチェイニングによるプロパティアクセス
+オプショナルチェイニング
+- プロパティアクセスの亜種
+- `onj.prop` の代わりに `obj?.prop` と書く
+- アクセスされるオブジェクトが null や undefined でも使用できる
+
+## 6.2 リテラル型
+### 6.2.1 ４種類のリテラル型
+リテラル型 = プリミティブ型をさらに細分化した型
+```ts
+type FooString = "foo" // これは "foo" という文字列のみが属するリテラル型
+
+const foo: FooString = "foo" // これは OK
+
+const bar: FooString = "bar" // エラー： Type "bar" is not assignable to type "foo".
+```
+```ts
+// 文字列のリテラル型
+//  変数名 リテラル型   値
+const foo: "foo" = "foo"
+
+// 数値のリテラル型
+const one: 1 = 1
+
+// 真偽値のリテラル型
+const t: true = true
+
+// BigInt のリテラル型
+const three: 3n = 3n
+```
+### 6.2.2 テンプレートリテラル型
+テンプレートリテラル型はバッククオートで囲まれたテンプレート文字列リテラルのような構文を持つ
+- ただし，`${}` の中に入るのは式ではなく型
+  - `Hello ${string}!` の `string` は型を指す
+```ts
+function getHelloStr(): `Hello, ${string}!` {
+  const rand = Math.random()
+  if (rand < 0.3) {
+    return "Hello, world!"
+  } else if (rand < 0.6) {
+    return "Hello, my world!"
+  }else if (rand < 0.9) {
+    // エラー： Type "Hello, world" is not assignable to type '`Hello, ${string}!`'
+    return "Hello, world"
+  } else {
+    // エラー： Type "Hell, world" is not assignable to type '`Hello, ${string}!`'
+    return "Hell, world!"
+  }
+}
+```
+
+### 6.2.3 ユニオン型とリテラル型を組み合わせて使うケース
+TypeScript における頻出パターン
+- リテラル型のユニオン型を作る
+  - enum に近いのか？
+    - https://weseek.co.jp/tech/1609/
+    - https://zenn.dev/mongolyy/articles/7a29ec7b611c0b
+  ```ts
+  function signNumber(type: "plus" | "minus") {
+    return type === "plus" ? 1 : -1
+  }
+  
+  console.log(signNumber("plus"))
+  console.log(signNumber("minus"))
+  // エラー： Argument of type "uhyo" is not assignable to parameter of type "plus" | "minus".
+  console.log(signNumber("uhyo")) 
+  ```
+
+### 6.2.4 リテラル型の widening
+リテラル型が自動的に，対応するプリミティブ型に変化する（広げられる）という挙動
+- 式としてのリテラルが let で宣言された変数に代入されたとき
+  ```ts
+  // 変数 uhyo1 は "uhyo" 型
+  const uhyo1 = "uhyo"
+  // 変数 uhyo2 は string 型
+  let uhyo2 = "uhyo"
+  ```
+  - そもそも，変数の型が型推論によって決められる場合，その変数の型は変数の初期化子（ = の右側の式）になる
+    - 変数が const で宣言された場合はこれが採用
+  - let で宣言された場合は，「変数の方がリテラル型に推論されそうなプリミティブ型に変換する」という処理が行われる
+    - リテラル型の widening
+    - let で宣言された変数は後で再代入がされることが期待されるため
+- オブジェクトリテラルの中
+  ```ts
+  const uhyo = {
+    name: "uhyo",
+    age: 26
+  }
+  ```
+  - 実際に name プロパティに入っているのは "uhyo"，age プロパティに入っているのは 26 にも関わらず，型は `{name: string, age: number}`
+    - オブジェクトリテラルの型が推論されるとき，各プロパティの型がリテラル型となる場合は widening される
+    - let の変数と同様に後から書き換えが可能であるため
+
+### 6.2.5 widening されるリテラル型・ widening されないリテラル型
+widening されるリテラル型
+- 式としてのリテラルに対して型推論されたもの
+
+widening されないリテラル型
+- プログラマが明示的に書いたもの
+```ts
+// これは widening される "uhyo" 型
+const uhyo1 = "uhyo"
+
+// これは widening されない "uhyo" 型
+const uhyo2: "uhyo" = "uhyo"
+
+// これは string 型
+let uhyo3 = uhyo1
+
+// これは uhyo 型
+let uhyo4 = uhyo2
+```
+
+## 6.3 型の絞り込み
+### 6.3.3 代数的データ型をユニオン型で再現するテクニック
+代数的データ型（algebraic data types; ADT）
+- いくつかの種類に分類されるデータを表すための型・データ構造
+- タグ付きユニオン，直和型といった別名がある
+
+## 6.4 keyof 型・ lookup 型
+### 6.4.1 lookup 型とは
+lookup 型
+- `T[K]` という構文をもつ型
+  - 多くの場合，`T` はオブジェクト型，`K` は文字列のリテラル型が用いられる
+- `T` というオブジェクト型が持つ `K` というプロパティの型
+
+### 6.4.2 keyof 型とは
+- 型から別の方を作ることができる機能
+- `keyof typeof T` という使い方が可能
+  ```ts
+  const mmConversionTable = {
+    mm: 1,
+    m: 1e3,
+    km: 1e6
+  }
+
+  // typeof mmConversionTable -> {mm:number; m:number; km:number}
+  // keyof typeof mmConversionTable -> mm | m | km
+  function convertUnits (value: number, unit: keyof typeof mmConversionTable): typeof mmConversionTable {
+    const mmValue = value * mmConversionTable[unit]
+    return {
+      mm: mmValue,
+      m: mmValue / 1e3,
+      km: mmValue / 1e6
+    }
+  }
+
+  console.log(convertUnits(5600, 'm')) // {"mm":5600000, "m":5600, "km":5.6}
+  ```
+
+### 6.4.3 keyof 型・ lookup 型とジェネエリクス
+typeof は型変数（型引数のように具体的な中身がわからない型）と組み合わせて使うことができる
+```ts
+function get<T, K extends keyof T> (obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+interface Human643 {
+  name: string
+  age: number
+}
+
+const uhyo643: Human643 = {
+  name: 'uhyo',
+  age: 26
+}
+
+// uhyoName は string 型
+const uhyoName = get(uhyo643, 'name')
+
+// uhyoAge は number 型
+const uhyoAge = get(uhyo643, 'age')
+```
+
+## 6.5 as による型アサーション
+型アサーションの使用はできるだけ避けるべき
+- TypeScript が保証してくれる型安全性を意図的に破壊する機能であるため
+- ただし，TypeScript の型推論も完璧ではないためこの機能が存在する
+
+### 6.5.1 型アサーションを用いて式の型をごまかす
+型アサーション
+- `式 as 型` という構文
+- その式の形を強制的に変えるという意味
+
+よろしくない例
+```ts
+function getFirstLetters(strOrNum: string | number) {
+  const str = strOrNum as string // コンパイラ上の型を強制的に変化させる
+  return str.slice(0,5)
+}
+
+// uhyoh と表示される
+console.log(getFirstLetters("uhyohyohyo"))
+
+// ランタイムエラーが発生
+console.log(getFirstLetters(123))
+```
+良い例
+```ts
+type Animal = {
+  tag: "animal"
+  species: string
+}
+
+type Human = {
+  tag: "human"
+  name: string
+}
+
+type User = Animal | Human
+
+function getNamesIfAllHuman(users: readonly User[]): string[] | undefined {
+  if(users.every(user => user.tag === "human")) {
+    // この if 文の中での user は Human 型であることは確定しているので強制的に Human 型に変更
+    return (users as Human[]).map(user => user.name)
+  }
+  return undefined
+}
+```
+
+### 6.5.2 as const の用法
+as const
+- `式 as const` という構文
+- 型アサーションの 型 の部分が `const` に変わった形だが，これは型アサーションのように危険な機能ではない
+
+`式 as const` の「式」の型推論に対して及ぼす効果
+1. 配列リテラルの型推論結果を配列型ではなくタプル型にする
+2. オブジェクトリテラルから推論されるオブジェクト型は全てのプロパティが readonly になり，配列リテラルから推論されるタプル型も readonly タプル型になる
+3. 文字列・数値・BigInt・真偽値リテラルに対してつけられるリテラル型が widening しないリテラル型になる
+4. テンプレート文字列リテラルの型が string ではなくテンプレートリテラル型になる
+```ts
+// string[] 型
+const names1 = ["uhyo", "John", "Taro"]
+
+// readonly ["uhyo", "John", "Taro"]　型
+const names2 = ["uhyo", "John", "Taro"] as const
+```
+
+## 6.6 any 型と unknown 型
+### 6.6.1 any 型という最終兵器
+any 型
+- 型チェックを無効化する型
+- TypeScript において最凶の危険性を誇る機能
+- "正しく"使う難易度は型アサーションよりもさらに上
+- IDE での補完サポートも効かなくなる
+```ts
+function doWhatever(obj: any) {
+  
+  // 好きなプロパティにアクセスできる
+  console.log(obj.user.name)
+
+  // 関数呼び出しもできる
+  obj()
+
+  // 計算もできる
+  const result = obj * 10
+  return result
+}
+
+// 全部コンパイルエラーが発生しないがランタイムエラーになる
+doWhatever(3)
+doWhatever({
+  user:{
+    name: "uhyo"
+  }
+})
+doWhatever(()=>{
+  console.log("hi")
+})
+```
+
+### 6.6.2 any 型の存在理由
+any 型が用意されている理由
+- JavaScript から TypeScript への移行を支援するため
+- 型をうまく表現できない場合のエスケープハッチとしての機能を持つため
+
+### 6.6.3 any に近いが安全な unknown 型
+unknown 型 = なんでもいれられる型
+- any 型は使う際に一切型チェックが行われず，なんでもできるように振る舞う一方，unknown 型の場合は正体が全く不明であるため，できることが制限される
+- 型の絞り込みをおこなって使うようにする
+  ```ts
+  function useUnknown(val: unknown) {
+    if(typeof val === 'string') {
+      // 型の絞り込みにより，ここでは val は string 型となる
+      console.log("val は文字列型です")
+      console.log(val.slice(0,5))
+    } else {
+      console.log("val は文字列型以外の何かです")
+      console.log(val)
+    }
+  }
+  ```
