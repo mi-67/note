@@ -145,6 +145,11 @@
     - [8.3.7 Promise の静的メソッド(3)](#837-promise-の静的メソッド3)
     - [8.3.10 Promise チェーン(3) エラーの扱い](#8310-promise-チェーン3-エラーの扱い)
     - [8.3.11 dynamic import 構文](#8311-dynamic-import-構文)
+  - [8.4 async / await 構文](#84-async--await-構文)
+    - [8.4.1 async 関数を作ってみる](#841-async-関数を作ってみる)
+    - [8.4.2 await 式も使っている](#842-await-式も使っている)
+    - [8.4.4 await とエラー処理](#844-await-とエラー処理)
+    - [8.4.5 async 関数のいろいろな宣言方法](#845-async-関数のいろいろな宣言方法)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2284,3 +2289,74 @@ Promise.any
 
 ### 8.3.11 dynamic import 構文
 `import("モジュール名")`という関数呼びだしのような構文で、指定されたモジュールを非同期的に読み込むことができる
+
+## 8.4 async / await 構文
+### 8.4.1 async 関数を作ってみる
+```ts
+async function get3(): Promise<number> {
+  return 3
+}
+```
+- async 関数の返り値は必ず Promise になる
+
+### 8.4.2 await 式も使っている
+await 式は async 関数の中で使える構文
+- 与えられた Promise の結果が出るまで待つ
+```ts
+const sleep = (duration: number) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, duration)
+  })
+}
+
+async function get3(){
+  await sleep(1000)
+  return 3
+}
+
+const p = get3()
+p.then(num => {
+  console.log(`num is ${num}`)
+})
+```
+
+### 8.4.4 await とエラー処理
+`await p` のようにして `Promise p` を待っているときにこの p が失敗したら、**await 式で例外が発生した**という扱いになる
+- `await p` という式は p が成功した場合は p の結果を返り値とする一方で、p が失敗した場合はその結果を例外として発生させる
+
+### 8.4.5 async 関数のいろいろな宣言方法
+async function 式の例
+```ts
+const main = async function() {
+  const fooContent = await readFile('foo.txt', 'utf8')
+  
+  // 2倍にして bar.txt に書き込む
+  await writeFile('bar.txt', fooContent + fooContent)
+  console.log('書き込み完了しました')
+}
+```
+
+async アロー関数式の例
+```ts
+const main = async() => {
+  const fooContent = await readFile('foo.txt', 'utf8')
+
+  // 2倍にして bar.txt に書き込む
+  await writeFile('bar.txt', fooContent + fooContent)
+  console.log('書き込み完了しました')
+}
+```
+async メソッド記法
+```ts
+const obj = {
+  // 普通のメソッド
+  normalMethod() {
+    // (略)
+  },
+  
+  // async 関数のメソッド
+  async asyncMethod() {
+    // (略)
+  }
+}
+```
