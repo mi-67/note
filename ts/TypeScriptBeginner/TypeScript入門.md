@@ -154,6 +154,10 @@
   - [9.1 tsconfig.json によるコンパイラオプション](#91-tsconfigjson-によるコンパイラオプション)
     - [9.1.1 tsconfig.json の自動生成](#911-tsconfigjson-の自動生成)
     - [9.1.2 ファイルパス周りの設定を押さえる](#912-ファイルパス周りの設定を押さえる)
+  - [9.2 チェックの厳しさに関わるオプション](#92-チェックの厳しさに関わるオプション)
+    - [9.2.1 チェックをまとめて有効にできる strict オプション](#921-チェックをまとめて有効にできる-strict-オプション)
+    - [9.2.2 strictNullChecks で null と undefined を安全に検査する](#922-strictnullchecks-で-null-と-undefined-を安全に検査する)
+    - [9.2.3 型の書き忘れや推論の失敗を防ぐ noImplicitAny オプション](#923-型の書き忘れや推論の失敗を防ぐ-noimplicitany-オプション)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2402,3 +2406,30 @@ TypeScript コンパイラは自動的に tsconfig.json を読み込んでコン
 ```
 - exclude は指定されたファイルをコンパイルから絶対に除外するという意味**ではない**ということでもある
   - exclude で指定されたファイルはコンパイルの起点にはならないが、別のファイルから import された場合はコンパイルの対象となる
+
+## 9.2 チェックの厳しさに関わるオプション
+### 9.2.1 チェックをまとめて有効にできる strict オプション
+strict オプションを有効にすると以下のオプションが全て有効になる
+- noImplicitAny
+- noImplicitThis
+- alwaysStrict
+- strictBindCallApply
+- strictNullChecks
+- strictFunctionTypes
+- strictPropertyInitialization
+- useUnknownInCatchVariables
+
+### 9.2.2 strictNullChecks で null と undefined を安全に検査する
+strictNullChecks オプションをオフにすると TypeScript の型システムから null と undefined の概念が消えてしまう
+
+strictNullChecks が導入されるバージョン2.0よりも前は null 安全性を持たないプログラミング言語だった
+- null 安全ではないプログラムが急に null 安全になると多くのコンパイルエラーが発生
+- strictNullChecks を無効にすることでコンパイルエラーを防ぐ
+- 逆を返せば、新しく作成したプログラムでは strictNullChecks は有効にしておくべき
+
+### 9.2.3 型の書き忘れや推論の失敗を防ぐ noImplicitAny オプション
+関数を宣言するときには原則として、型注釈を書かないといけない
+- 書かなかった場合、`Parameter 'num' is implicitly has an 'any' type.` のようなコンパイルエラーが発生
+- noImplicitAny により発生するコンパイルエラーは「`~ implicitly has an 'any' type.`」という文言を持つ
+
+このオプションを無効にすると引数が any 型となってしまう
