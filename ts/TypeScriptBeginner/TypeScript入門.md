@@ -150,6 +150,10 @@
     - [8.4.2 await 式も使っている](#842-await-式も使っている)
     - [8.4.4 await とエラー処理](#844-await-とエラー処理)
     - [8.4.5 async 関数のいろいろな宣言方法](#845-async-関数のいろいろな宣言方法)
+- [9. TypeScript のコンパイラオプション](#9-typescript-のコンパイラオプション)
+  - [9.1 tsconfig.json によるコンパイラオプション](#91-tsconfigjson-によるコンパイラオプション)
+    - [9.1.1 tsconfig.json の自動生成](#911-tsconfigjson-の自動生成)
+    - [9.1.2 ファイルパス周りの設定を押さえる](#912-ファイルパス周りの設定を押さえる)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2360,3 +2364,41 @@ const obj = {
   }
 }
 ```
+
+# 9. TypeScript のコンパイラオプション
+## 9.1 tsconfig.json によるコンパイラオプション
+TypeScript コンパイラは自動的に tsconfig.json を読み込んでコンパイル時に設定を使用してくれる
+
+### 9.1.1 tsconfig.json の自動生成
+1. `npm init` で package.json を生成する
+2. `npm install -D typescript` で	TypeScriptコンパイラを node_modules 内にインストールする
+3. `npx tsc --init` で tsconfig.json を生成する（node_modules の中にインストールした tsc コマンドが使われる）
+4. 生成された tsconfig.json を必要に応じて編集する
+
+### 9.1.2 ファイルパス周りの設定を押さえる
+どのファイルをコンパイルするかという情報は include を使って設定
+```json
+{
+  "include":["./src/**/*.ts"]
+}
+```
+- include は配列なので、複数パターンを並べることができる
+  - 例：src の中にある .ts ファイル全部に加えて lib の中にある .ts ファイルも全部コンパイルしたい場合
+    ```json
+    {
+      "include":["./src/**/*.ts","./lib/**/*.ts"]
+    }
+    ```
+- glob パターン
+  - `**/`: 0個以上んのディレクトリ階層
+  - `*`: 任意のファイル名
+
+ファイルを除外したいときには exclude を使う
+```json
+{
+  "include":["./src/**/*.ts"],
+  "exclude":["./src/__tests__/**/*.ts"]
+}
+```
+- exclude は指定されたファイルをコンパイルから絶対に除外するという意味**ではない**ということでもある
+  - exclude で指定されたファイルはコンパイルの起点にはならないが、別のファイルから import された場合はコンパイルの対象となる
