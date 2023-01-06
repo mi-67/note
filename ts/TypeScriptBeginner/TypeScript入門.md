@@ -130,6 +130,26 @@
   - [7.2 Node.js のモジュールシステム](#72-nodejs-のモジュールシステム)
     - [7.2.1 Node.js の組み込みモジュール](#721-nodejs-の組み込みモジュール)
     - [7.2.2 npm とは](#722-npm-とは)
+- [8. 非同期処理](#8-非同期処理)
+  - [8.1 非同期処理とは](#81-非同期処理とは)
+    - [8.1.1 "時間がかかる処理"としての非同期処理](#811-時間がかかる処理としての非同期処理)
+    - [8.1.2 シングルスレッドモデル・ノンブロッキング](#812-シングルスレッドモデルノンブロッキング)
+  - [8.2 コールバックによる非同期処理の違い](#82-コールバックによる非同期処理の違い)
+    - [8.2.1 コールバック関数とは](#821-コールバック関数とは)
+    - [8.2.4 同期処理と非同期処理の順序](#824-同期処理と非同期処理の順序)
+  - [8.3 Promise を使う](#83-promise-を使う)
+    - [8.3.1 Promise 版の fs を使ってみる](#831-promise-版の-fs-を使ってみる)
+    - [8.3.2 コールバック関数の登録とエラー処理(1)](#832-コールバック関数の登録とエラー処理1)
+    - [8.3.5 Promise の静的メソッド(1)](#835-promise-の静的メソッド1)
+    - [8.3.6 Promise の静的メソッド(2)](#836-promise-の静的メソッド2)
+    - [8.3.7 Promise の静的メソッド(3)](#837-promise-の静的メソッド3)
+    - [8.3.10 Promise チェーン(3) エラーの扱い](#8310-promise-チェーン3-エラーの扱い)
+    - [8.3.11 dynamic import 構文](#8311-dynamic-import-構文)
+  - [8.4 async / await 構文](#84-async--await-構文)
+    - [8.4.1 async 関数を作ってみる](#841-async-関数を作ってみる)
+    - [8.4.2 await 式も使っている](#842-await-式も使っている)
+    - [8.4.4 await とエラー処理](#844-await-とエラー処理)
+    - [8.4.5 async 関数のいろいろな宣言方法](#845-async-関数のいろいろな宣言方法)
 # 1. イントロダクション
 ## 1.1 TypeScript とは
 TypeScript
@@ -2159,3 +2179,184 @@ npm
   - yarn
   - pnpm
 - 組み込みモジュールと同様，import の際に from の後が `./` や `../` から始まらず，いきなりモジュール名を書く
+
+# 8. 非同期処理
+## 8.1 非同期処理とは
+非同期処理
+- 裏で行われる処理
+- 時間がかかる場合が多い
+
+### 8.1.1 "時間がかかる処理"としての非同期処理
+時間がかかる処理
+- 通信
+- ファイルの読み書き
+- アプリケーションサーバを書く場合
+  - 他のサーバの処理を待つ必要がある場合もある（例：DB にアクセスする場合）
+
+上記はいずれも非同期処理として表現される
+
+### 8.1.2 シングルスレッドモデル・ノンブロッキング
+- ブロッキング
+  - その処理の実行が完了するまではプログラムはそこで停止するような処理
+  - TypeScript の実行モデルは**シングルスレッド**であるため、これは歓迎されない
+    - シングルスレッド：プログラムの複数箇所が同時（並列）に実行されることはない
+- ノンブロッキング
+  - TypeScript の非同期処理はこちら
+
+## 8.2 コールバックによる非同期処理の違い
+### 8.2.1 コールバック関数とは
+コールバック関数
+- 非同期処理が終わったときに呼び出される関数
+- 非同期処理を実行する関数 = 非同期処理の**実行を開始**する関数
+- 使用する場合、非同期処理の実行開始時に「終了したら呼び出される関数」を登録しておく
+
+### 8.2.4 同期処理と非同期処理の順序
+同期的に実行中のプログラムに非同期処理が割り込むことはない
+
+## 8.3 Promise を使う
+非同期処理においては、「終わった後に何をするか」を表す関数が不可欠
+- コールバック関数ベースの非同期処理の場合は、非同期処理を開始する関数（setTimeout や readFile など）に直接これをコールバック関数として渡す
+- Promise ベースの非同期処理では、関数を受け取らず、**Promise オブジェクト**を返す
+  - Promise オブジェクトに対して、終わった後に行う処理を表す関数を登録する
+
+### 8.3.1 Promise 版の fs を使ってみる
+「非同期処理そのもの」を表す抽象的なオブジェクトが用意されたメリット
+- 非同期処理を行う関数なら、どんな関数でも「Promise オブジェクトを返す」という点で共通しており、結果も「Promise の解決」という共通の機構を通して伝えられる
+  - コールバック関数を直接わたす形式ではコールバック関数の形にバリエーションがあるため、使いたい API ごとにどのようにコールバック関数を渡すのか調べる必要がある
+
+### 8.3.2 コールバック関数の登録とエラー処理(1)
+catch に渡される引数の型は any 型になっている
+- [6.6 any 型と unknown 型](#66-any-型と-unknown-型)で解説したように any 型は危険なので unknown と注釈をつけた方が良い（本来は unknown 型にするべきだが、歴史的経緯で any 型になっている）
+  ```ts
+  import { readFile } from 'fs/promises'
+
+  const p = readFile('foo.txt', 'utf8')
+
+  p.then((result) => {
+    console.log('成功', result)
+  },(error: unknown) => {
+    console.log('失敗', error)
+  })
+  ```
+
+### 8.3.5 Promise の静的メソッド(1)
+Promise.resolve
+- 与えられた引数を結果として即座に成功する Promise オブジェクトを作るためのメソッド
+
+Promise.reject
+- 与えられた引数を結果として即座に失敗する Promise オブジェクトを作るためのメソッド
+
+### 8.3.6 Promise の静的メソッド(2)
+Promise.all
+- Promise オブジェクトの配列を引数として受け取り、「それらが全て成功したら成功となる Promise オブジェクト」を作って返す
+  - どれか１つでも失敗した場合、 Promise.all が返した Promise もその時点で失敗する
+  - 失敗の結果は最初に失敗した Promise の Error オブジェクトがそのまま引き継がれる
+- 複数の非同期処理を並行して行いたい場合に適している
+  ```ts
+  import { readFile } from 'fs/promises'
+
+  const pFoo = readFile('foo.txt', 'utf8')
+  const pBar = readFile('bar.txt', 'utf8')
+  const pBaz = readFile('baz.txt', 'utf8')
+
+  const p = Promise.all([pFoo, pBar, pBaz])
+  p.then((results) => {
+    console.log('foo.txt', results[0])
+    console.log('bar.txt', results[1])
+    console.log('baz.txt', results[2])
+  })
+  ```
+
+Promise.race
+- Promise.all と同じように Promise の配列を受け取る
+- それらのうち、最も早く成功または失敗したものの結果を、全体（Promise.race が返した Promise の）結果とする
+
+### 8.3.7 Promise の静的メソッド(3)
+Promise.allSettled
+- Promise の配列を受け取り、新しい Promise を返す
+  - 返り値の Promise は渡された全ての
+ Promise が解決（成功または失敗）したら成となる
+- 渡された Promise のいずれかが失敗した場合、Promise.all の返す Promise は即座に失敗になるが、Promise.allSettled はすべての結果が出るまで待つ
+
+Promise.any
+- Promise の配列を受け取り、新しい Promise を返す
+  - 渡された Promise のうちいずれかが成功した時点で Promise.any の結果の Promise も成功となる
+- 渡された Promise のいずれかが失敗した場合、Promise.race は即座に失敗になるが、Promise.any は他の Promise の成功を待つ
+  - つまり、Promise.race は成功も失敗も含めて一番早く結果が出たものに従う一方で、Promise.any は成功したもののうちで一番早いものが結果になる
+
+### 8.3.10 Promise チェーン(3) エラーの扱い
+コールバック関数の中でエラーを発生させると Promise の失敗を引き起こせる
+
+### 8.3.11 dynamic import 構文
+`import("モジュール名")`という関数呼びだしのような構文で、指定されたモジュールを非同期的に読み込むことができる
+
+## 8.4 async / await 構文
+### 8.4.1 async 関数を作ってみる
+```ts
+async function get3(): Promise<number> {
+  return 3
+}
+```
+- async 関数の返り値は必ず Promise になる
+
+### 8.4.2 await 式も使っている
+await 式は async 関数の中で使える構文
+- 与えられた Promise の結果が出るまで待つ
+```ts
+const sleep = (duration: number) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, duration)
+  })
+}
+
+async function get3(){
+  await sleep(1000)
+  return 3
+}
+
+const p = get3()
+p.then(num => {
+  console.log(`num is ${num}`)
+})
+```
+
+### 8.4.4 await とエラー処理
+`await p` のようにして `Promise p` を待っているときにこの p が失敗したら、**await 式で例外が発生した**という扱いになる
+- `await p` という式は p が成功した場合は p の結果を返り値とする一方で、p が失敗した場合はその結果を例外として発生させる
+
+### 8.4.5 async 関数のいろいろな宣言方法
+async function 式の例
+```ts
+const main = async function() {
+  const fooContent = await readFile('foo.txt', 'utf8')
+  
+  // 2倍にして bar.txt に書き込む
+  await writeFile('bar.txt', fooContent + fooContent)
+  console.log('書き込み完了しました')
+}
+```
+
+async アロー関数式の例
+```ts
+const main = async() => {
+  const fooContent = await readFile('foo.txt', 'utf8')
+
+  // 2倍にして bar.txt に書き込む
+  await writeFile('bar.txt', fooContent + fooContent)
+  console.log('書き込み完了しました')
+}
+```
+async メソッド記法
+```ts
+const obj = {
+  // 普通のメソッド
+  normalMethod() {
+    // (略)
+  },
+  
+  // async 関数のメソッド
+  async asyncMethod() {
+    // (略)
+  }
+}
+```
