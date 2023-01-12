@@ -37,6 +37,7 @@ Nuxt は繰り返し作業を自動化するため規約と独断的なディレ
 - データ取得ユーティリティ
 - 人手による設定を必要としない TypeScript のサポート
 - 設定済みビルドツール
+
 詳細は[こちら](https://nuxt.com/docs/guide/concepts/auto-imports)
 
 ### Rendering modes
@@ -45,4 +46,5 @@ Nuxt はさまざまなユースケースに対応するため、異なるレン
 - クライアントサイドのみのレンダリング
 - 完全な静的サイトの生成
 - ハイブリッドレンダリング（ルート単位のキャッシュ戦略）
+
 詳細は[こちら](https://nuxt.com/docs/guide/concepts/rendering)
