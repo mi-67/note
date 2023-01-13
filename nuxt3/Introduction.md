@@ -26,7 +26,7 @@ Nuxt とは何かを理解するためには、モダンなアプリケーショ
 
 Nuxt はこれを処理し、フロントエンドとバックエンドの両方の機能を提供するため、Web アプリケーションの作成に集中できます。
 
-### view engine
+### View engine
 Nuxt は Vue.js を view engine として使用しています。Vue3 の全ての機能が Nuxt で使用できます。Vue と Nuxt の統合の詳細については[こちら](https://nuxt.com/docs/guide/concepts/vuejs-development)を参照してください。
 - [What is view engine? What does it actually do?](https://stackoverflow.com/questions/8308485/what-is-view-engine-what-does-it-actually-do)
 
@@ -48,3 +48,35 @@ Nuxt はさまざまなユースケースに対応するため、異なるレン
 - ハイブリッドレンダリング（ルート単位のキャッシュ戦略）
 
 詳細は[こちら](https://nuxt.com/docs/guide/concepts/rendering)
+
+### Server engine
+Nuxt のサーバエンジン Nitro は新しいフルスタック機能を解放します。
+- [Nitroについて](https://nitro.unjs.io/)
+
+開発環境では、サーバコードとコンテキストの分離のために Rollup と Node.js Worker を使用します。また、`server/api/` にあるファイルと `server/middleware/` にあるサーバミドルウェアを読み込んでサーバ API を生成します。
+
+本番環境では、Nitro はアプリとサーバを一つの共通な `.output` ディレクトリにビルドします。出力されたものは軽量で、最小化され、polyfills を除くあらゆる Node.js モジュールから切り離されています。出力されたものは Node.js、サーバーレス、Workers、エッジサイドレンダリング、または純粋に静的なものまで、JavaScript をサポートするあらゆるシステムでデプロイすることができます。
+
+詳細は[こちら](https://nuxt.com/docs/guide/concepts/server-engine)
+
+### Production-ready
+Nuxt アプリケーションは Node サーバや Deno サーバでデプロイしたり、静的環境でホスティングするためにプレレンダリングしたり、サーバーレスプロバイダーやエッジプロバイダーにデプロイしたりすることができます。
+- [[Next.js入門]Pre-rendering メモ](https://zenn.dev/tsucchiiinoko/articles/7f7e4da3f4f379)
+
+詳細は[こちら](https://nuxt.com/docs/getting-started/deployment)
+
+### Modular
+モジュールシステムによりカスタム機能やサードパーティ機能の統合で Nuxt を拡張することができます。
+
+詳細は[こちら](https://nuxt.com/docs/guide/concepts/modules)
+
+### Architecture
+Nuxt はさまざまなコアパッケージで構成されています。
+- コアエンジン：Nuxt
+- バンドラ：@nuxt/vite-builder、@nuxt/webpack-builder
+- コマンドラインインタフェース：Nuxi
+- サーバエンジン：nitro
+- ディベロップメントキット：@nuxt/kit
+- Nuxt 2 からの橋渡し：@nuxt/bridge
+
+Nuxt の完全な機能と各パッケージの範囲を完全に把握するために、各コンセプトを読むことをおすすめします。
