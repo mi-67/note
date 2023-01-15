@@ -82,3 +82,22 @@ const appConfig = useAppConfig()
 参考
 - [hydrate（ハイドレート）とはどんな意味なのか？](https://zenn.dev/smallstall/articles/5531fd6647f713)
 - [Hot Module Replacementの設定と仕組みを理解する](https://qiita.com/haradakunihiko/items/40486ec2b6b9aea119bb)
+
+## External Configuration Files
+Nuxt は設定のための単一の信頼できるソースとして `nuxt.config.ts` を使用し、外部設定ファイルの読みこみをスキップします。プロジェクトを構築する過程でそれらを設定する必要が生じるかもしれません。下の表は、一般的な構成と、該当する場合は Nuxt でどのように構成することができるかを示したものです。
+|名前|設定ファイル|設定方法|
+|:-|:-|:-|
+|Nitro| ~~nitro.config.ts~~ |`nitro` キーを `nuxt.config` の中で使用|
+|PostCSS|~~postcss.config.ts~~|`postcss` キーを `nuxt.config` の中で使用|
+|Vite|~~vite.config.ts~~|`vite` キーを `nuxt.config` の中で使用|
+|webpack|~~webpack.config.ts~~|`webpack` キーを `nuxt.config` の中で使用|
+
+その他の一般的な設定ファイルの一覧はこちらです。
+|名前|設定ファイル|設定方法|
+|:-|:-|:-|
+|TypeScript|tsconfig.json|[詳細情報](https://nuxt.com/docs/guide/concepts/typescript#nuxttsconfigjson)|
+|Eslint|.eslintrc.js|[詳細情報](https://eslint.org/docs/latest/use/configure/configuration-files)|
+|Prettier|.prettierrc.json|[詳細情報](https://prettier.io/docs/en/configuration.html)|
+|Stylelint|.stylelintrc.json|[詳細情報](https://stylelint.io/user-guide/configure)|
+|TailwindCSS|.tailwind.config.js|[詳細情報](https://tailwindcss.nuxt.dev/tailwind/config/)|
+|Vitest|.vitest.config.ts|[詳細情報](https://vitest.dev/config/)|
