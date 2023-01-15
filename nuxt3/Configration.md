@@ -4,7 +4,7 @@
 ## Nuxt Configuration
 `nuxt.congif.ts` ファイルは Nuxt プロジェクトのルートディレクトリに置かれていて、アプリケーションの挙動の上書きや拡張ができます。
 
-最低限の設定ファイルは 設定が書かれたオブジェクトを含む `defineNuxtConfig` 関数をエクスポートします。`defineNuxtConfig` ヘルパーはインポートしなくてもグローバルに使用可能です。
+最低限の設定ファイルは設定が書かれたオブジェクトを含む `defineNuxtConfig` 関数をエクスポートします。`defineNuxtConfig` ヘルパーはインポートしなくてもグローバルに使用可能です。
 ```ts
 export default defineNuxtConfig({
     // Nuxt の設定
@@ -15,3 +15,70 @@ export default defineNuxtConfig({
 全ての設定オプションについての説明は[こちら](https://nuxt.com/docs/api/configuration/nuxt-config)
 
 Nuxt でアプリケーションを構築するために TypeScript を使用する必要はありません。しかし、`nuxt.config` ファイルの拡張子には `.ts` を使用することを強く推奨します。こうすることで設定を編集している間のタイポや間違えを避けるために IDE からヒントの恩恵を受けることができます。
+
+## Environment Variables and Private Tokens
+`runtimeConfig` API は環境変数のような値を値をアプリケーションの他の部分に公開します。デフォルトでは、これらのキーはサーバーサイドでのみ使用可能です。`runtimeConfig.public` 内のキーはクライアントサイドでも利用可能です。
+
+これらの値は `nuxt.config` で定義されるべきであり、環境変数を使って上書きすることができます。
+
+```ts
+export default defineNuxtConfig({
+    runtimeConfig: {
+        // サーバーサイドでのみ使用可能なキー
+        apiSecret: '123',
+        public: {
+            // この中に書かれているものはクライアントサイドでも利用可能
+            apiBase: '/api'
+        }
+    }
+})
+```
+```env
+# apiSecret の値をオーバーライドします
+NUXT_API_SECRET=api_secret_token
+```
+これらの変数は `usingRuntimeConfig` コンポーザブルを使用してアプリケーションの他の部分に公開されます。
+
+詳細は[こちら](https://nuxt.com/docs/guide/going-further/runtime-config)
+
+## App Configuration
+`app.config.ts` ファイルはソースディレクトリ（デフォルトではプロジェクトのルート）に配置されていて、ビルド時に決定できるパブリック変数を公開するために使用されます。`runtimeConfig` オプションとは逆に、環境変数を上書きすることはできません。
+
+最低限の設定ファイルは設定が書かれたオブジェクトを含む `defineAppConfig` 関数をエクスポートします。`defineAppConfig` ヘルパーははインポートしなくてもグローバルに使用可能です。
+```ts
+export default defineAppConfig({
+    title: 'Hello Nuxt',
+    theme: {
+        dark: true,
+        colors: {
+            primary: '#ff0000'
+        }
+    }
+})
+```
+これらの変数は `useAppConfig` コンポーザブルを使用してアプリケーションの他の部分に公開されます。
+```Vue
+<script setup>
+const appConfig = useAppConfig()
+</script>
+```
+詳細は[こちら](https://nuxt.com/docs/guide/directory-structure/app-config)
+
+## `runtimeConfig` vs `app.config`
+上記のように、`runtimeConfig` と `app.config` はどちらもアプリケーションの他の部分に変数を公開するために使われます。どちらを使用するべきかを判断するためにいくつかのガイドラインがあります。
+- `runtimeConfig`: ビルド後に環境変数を使用して明示する必要があるプライベートトークンまたはパブリックトークン
+- `app.config`: ビルド時に決定されるパブリックトークン、テーマバリアントやタイトルなどのweb サイト設定、機密性のないプロジェクト設定
+
+|機能・特徴|`runtimeConfig`|`app.config`|
+|:-|:-|:-|
+|クライアントサイド|ハイドレート|バンドル|
+|環境変数|:check:|:x:|
+|リアクティブ|:check:|:check:|
+|型のサポート|:check:一部|:check:|
+|リクエストごとの設定|:x:|:check:|
+|Hot Module Replacement|:x:|:check:|
+|プリミティブでないJS型|:x:|:check:|
+
+参考
+- [hydrate（ハイドレート）とはどんな意味なのか？](https://zenn.dev/smallstall/articles/5531fd6647f713)
+- [Hot Module Replacementの設定と仕組みを理解する](https://qiita.com/haradakunihiko/items/40486ec2b6b9aea119bb)
