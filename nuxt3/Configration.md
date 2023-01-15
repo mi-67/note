@@ -72,12 +72,12 @@ const appConfig = useAppConfig()
 |機能・特徴|`runtimeConfig`|`app.config`|
 |:-|:-|:-|
 |クライアントサイド|ハイドレート|バンドル|
-|環境変数|:check:|:x:|
-|リアクティブ|:check:|:check:|
-|型のサポート|:check:一部|:check:|
-|リクエストごとの設定|:x:|:check:|
-|Hot Module Replacement|:x:|:check:|
-|プリミティブでないJS型|:x:|:check:|
+|環境変数|:white_check_mark:|:x:|
+|リアクティブ|:white_check_mark:|:white_check_mark:|
+|型のサポート|:white_check_mark: 一部|:white_check_mark:|
+|リクエストごとの設定|:x:|:white_check_mark:|
+|Hot Module Replacement|:x:|:white_check_mark:|
+|プリミティブでないJS型|:x:|:white_check_mark:|
 
 参考
 - [hydrate（ハイドレート）とはどんな意味なのか？](https://zenn.dev/smallstall/articles/5531fd6647f713)
