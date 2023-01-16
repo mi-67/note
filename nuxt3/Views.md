@@ -93,4 +93,4 @@ Vue に慣れている人なら、`main.js` （通常 Vue アプリを作成す�
   </section>
 </template>
 ```
-より多くのレイアウトをさくセシ、パージでの使用方法について学びたい場合は[こちら](https://nuxt.com/docs/guide/directory-structure/layouts)
+より多くのレイアウトを作成し、ページでの使用方法について学びたい場合は[こちら](https://nuxt.com/docs/guide/directory-structure/layouts)
