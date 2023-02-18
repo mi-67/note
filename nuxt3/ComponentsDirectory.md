@@ -18,6 +18,20 @@ components/
 </template>
 ```
 
+## Custom directories
+デフォルトでは、`~/components` ディレクトリのみがスキャンされます。他のディレクトリを追加したい場合、またはこのディレクトリのサブフォルダ内でコンポーネントをスキャンする方法を変更したい場合は、設定に追加のディレクトリを加えることができます。
+
+```ts
+export default defineNuxtConfig({
+  components: [
+    { '~/components/special-components', prefix: 'Special' },
+    '~/components',
+  ]
+})
+```
+
+あらゆるネストされたディレクトリは、順番にスキャンされるため最初に追加する必要があります。
+
 ## Component extensions
 デフォルトでは、`nuxt.config.ts` の extension キー指定された拡張子を持つあらゆるファイルはコンポーネントとして扱われます。コンポーネントとして登録されるファイル拡張子を限定する必要がある場合は、コンポーネントディレクトリ宣言とその `extension` キーの拡張形式を使用します。
 ```diff ts
