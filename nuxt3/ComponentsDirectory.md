@@ -136,3 +136,180 @@ Nuxt の自動インポート機能を回避したい場合や回避が必要な
   const show = ref(false)
 </script>
 ```
+
+## `<ClientOnly>` Component
+Nuxt は意図的にクライアント側のみでコンポーネントをレンダリングするために `<ClientOnly>` コンポーネントを提供します。クライアントにのみコンポーネントをインポートするためには、クライアントサイドのみのプラグインにコンポーネントを登録します。
+
+```Vue
+<template>
+  <div>
+    <Sidebar />
+    <ClientOnly>
+      <!-- this component will only be rendered on client-side -->
+      <Comments />
+    </ClientOnly>
+  </div>
+</template>
+```
+クライアント側で `<ClientOnly>` がマウントされるまでのフォールバックとしてスロットを使用します。
+
+```Vue
+<template>
+  <div>
+    <Sidebar />
+    <!-- This renders the "span" element on the server side -->
+    <ClientOnly fallbackTag="span">
+      <!-- this component will only be rendered on client side -->
+      <Comments />
+      <template #fallback>
+        <!-- this will be rendered on server side -->
+        <p>Loading comments...</p>
+      </template>
+    </ClientOnly>
+  </div>
+</template>
+```
+
+## .client Components
+コンポーネントがクライアント側だけでレンダリングされることを意図している場合、コンポーネントの接尾辞 `.client` を追加することができます。
+
+```
+components/
+└ Comments.client.vue
+```
+```Vue
+<template>
+  <div>
+    <!-- このコンポーネントはクライアント側のみでレンダリングされます -->
+    <Comments />
+  </div>
+</template>
+```
+この機能は、Nuxt の自動インポートおよび `#components` インポートでのみ動作します。これらのコンポーネントを実際のパスから意図的にインポートしても、クライアント専用のコンポーネントには変換されません。
+
+`.client` コンポーネントはマウントされた後のみに描画されます。`onMounted()` を使用してレンダリングされたテンプレートにアクセスするには、`onMounted()` フックのコールバックに `await nextTick()` を追加します。
+
+## .server Components
+`.server` コンポーネントは単独で使用することもできますし、`.client` コンポーネントと組み合わせて使用することもできます。
+
+### Standalone server components
+スタンドアローンサーバーコンポーネントは常にサーバ上でレンダリングされます。それらの props が更新されると、レンダリングされた HTML をインプレースで更新するネットワークリクエストが発生します。
+
+サーバーコンポーネントは現在実験的なもので、それらを使うためには `nuxt.connfig` で「componentIslands」機能を有効にする必要があります。
+```ts
+export default defineNuxtConfig({
+  experimental: {
+    componentIslands: true
+  }
+})
+```
+これにより、サーバー専用のコンポーネントを接尾辞 `.server` で登録でき、アプリケーションの任意の場所で自動停に使用できます。
+
+```
+components/
+└ HighlightedMarkdown.server.vue
+```
+```Vue
+<template>
+  <div>
+    <!--
+      これは自動的にサーバ上でレンダリングされます。つまり、マークダウンのパースとハイライトを行うライブラリはクライアントのバンドルに含まれません。
+     -->
+    <HighlightedMarkdown markdown="# Headline" />
+  </div>
+</template>
+```
+スロットは現在の開発状況ではサーバーコンポーネントでサポートされていません。
+
+非同期コードをサーバーコンポーネントで使用する場合、既知の問題があることに注意してください。それは、最初のレンダリングでハイドレーションミスマッチエラーを引き起こすということです。詳細は [#18500](https://github.com/nuxt/nuxt/issues/18500#issuecomment-1403528142) を参照してください。回避策があるまで、サーバーコンポーネントは同期でなければいけません。
+
+### Paired with a `.client` component
+この場合、`.server` + `.client` コンポーネントはコンポーネントの2「等分」であり、サーバー側とクライアント側にコンポーネントを別々に実装する発展的なユースケースで使用することができます。
+
+```
+components/
+├ Comments.client.vue
+└ Comments.server.vue
+```
+```Vue
+<template>
+  <div>
+    <!-- このコンポーネントはサーバーサイドで　Comments.server をレンダリングし、クライアントサイドにマウントされると Comments.client をレンダリングします。 -->
+    <Comments />
+  </div>
+</template>
+```
+コンポーネントのクライアント側では、コンポーネントがサーバーでレンダリングされた HTML を「ハイドレート」できることが重要です。つまり、最初の読み込み時に同じ HTML を描画する必要があり、さもなければ、ハイドレーションのミスマッチが発生します。
+
+## `<DevOnly>` Component
+Nuxt は開発中のみコンポーネントを描画するために `<DevOnly>` コンポーネントを提供します。
+
+このコンテンツは製品版のビルドやツリーシェイクには含まれません。
+
+```Vue
+<template>
+  <div>
+    <Sidebar />
+    <DevOnly>
+      <!-- このコンポーネントは開発中のみ描画されます -->
+      <LazyDebugBar />
+    </DevOnly>
+  </div>
+</template>
+```
+
+## Library Authors
+自動ツリーシェイクとコンポーネント登録ができる Vue コンポーネントライブラリの作成がとても簡単✨
+
+`components:dirs` フックを使用すると Nuxt モジュールでのユーザの設定を必要とせずにディレクトリリストを拡張できます。
+
+このようなディレクトリ構造を想像してください。
+```
+node_modules/
+├ awesome-ui/
+│ ├ components/
+│ │ ├ Alert.vue
+│ │ └ Button.vue
+│ └ nuxt.js
+├ pages/
+│ └ index.vue
+└ nuxt.config.js
+```
+そして、`awesome-ui/nuxt.js` で `components:dirs` フックを使用することができます。
+```ts
+import { defineNuxtModule } from '@nuxt/kit'
+import { fileURLToPath } from 'node:url'
+export default defineNuxtModule({
+  hooks: {
+    'components:dirs'(dirs) {
+      // ./components ディレクトリをリストに追加します。
+      dirs.push({
+        path: fileURLToPath(new URL('./components', import.meta.url)),
+        prefix: 'awesome'
+      })
+    }
+  }
+})
+```
+これで完了です！これで、プロジェクトでは、`nuxt.config` ファイルで UI ライブラリを Nuxt モジュールとしてインポートできるようになりました。
+
+```ts
+export default {
+  modules: ['awesome-ui/nuxt']
+}
+```
+
+...そして、モジュールコンポーネント（接頭辞は `awesome-` ）を直接 `pages/index.vue` で使用します。
+
+```Vue
+<template>
+  <div>
+    My <AwesomeButton>UI button</AwesomeButton>!
+    <awesome-alert>Here's an alert!</awesome-alert>
+  </div>
+</template>
+```
+
+使用する場合のみコンポーネントを自動的にインポートし、`node_modules/awesome-ui/components` にあるコンポーネントを更新する際にも HMR をサポートします。
+
+[こちら](https://nuxt.com/docs/examples/auto-imports/components)で実際の例を見たり編集したりできます。
