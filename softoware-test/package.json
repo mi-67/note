@@ -1,0 +1,11 @@
+{
+  "name": "softoware-test",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest"
+  },
+  "dependencies": {
+    "vitest": "^0.31.0"
+  }
+}
