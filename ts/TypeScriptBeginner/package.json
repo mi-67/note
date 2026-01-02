@@ -29,6 +29,6 @@
   },
   "dependencies": {
     "express": "^4.22.1",
-    "fastify": "^4.10.2"
+    "fastify": "^4.29.1"
   }
 }
